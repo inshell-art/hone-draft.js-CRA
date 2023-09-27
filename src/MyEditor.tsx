@@ -1,48 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Editor, EditorState, ContentBlock, DefaultDraftBlockRenderMap, EditorBlock, Modifier, ContentState, genKey } from 'draft-js';
+import { Editor, EditorState, ContentBlock, DefaultDraftBlockRenderMap, EditorBlock, Modifier, ContentState, genKey, getDefaultKeyBinding } from 'draft-js';
 import 'draft-js/dist/Draft.css';
 import { OrderedMap } from 'immutable';
-
-// A function that inserts a new block below the current block
-function insertNewBlockBelowCurrentBlock(editorState: EditorState, blockText: string): EditorState {
-  const currentContent = editorState.getCurrentContent();
-  const selection = editorState.getSelection();
-  const currentBlockKey = selection.getStartKey();
-  const currentBlock = currentContent.getBlockForKey(currentBlockKey);
-
-  // Split the block at the current cursor position
-  const afterSplit = Modifier.splitBlock(currentContent, selection);
-
-  // Create a new block with the given text
-  const newBlockKey = genKey();
-  const newBlock = new ContentBlock({
-    key: newBlockKey,
-    type: 'unstyled',
-    text: blockText,
-  });
-
-  // Insert the new block below the current block
-  const blockMap = afterSplit.getBlockMap();
-  const blocksBefore = blockMap.toSeq().takeUntil((v) => v === currentBlock);
-  const blocksAfter = blockMap.toSeq().skipUntil((v) => v === currentBlock).rest();
-  const newBlockMap: OrderedMap<string, ContentBlock> = blocksBefore.concat([[currentBlockKey, currentBlock], [newBlockKey, newBlock]], blocksAfter).toOrderedMap();
-
-  // Create a new content state with the new block
-  const newContentState: ContentState = afterSplit.merge({
-    blockMap: newBlockMap,
-    selectionBefore: selection,
-    selectionAfter: selection,
-  }) as ContentState;
-
-  // Push the new content state to the editor state
-  return EditorState.push(editorState, newContentState, 'insert-fragment');
-}
 
 const MyEditor: React.FC = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [commandLineActive, setCommandLineActive] = useState(false);
   const editorRef = useRef<Editor>(null);
-  const commandLineActiveRef = useRef(false); // Use a ref instead of state
+  const [step, setStep] = useState(0);
 
 
   useEffect(() => {
@@ -52,10 +17,7 @@ const MyEditor: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (editorState) {
-      // Force re-render by creating a new EditorState with the same content
-      setEditorState(EditorState.set(editorState, { allowUndo: true }));
-    }
+    console.log('commandLineActive changed:', commandLineActive);
   }, [commandLineActive]);
 
 
@@ -64,62 +26,90 @@ const MyEditor: React.FC = () => {
     const currentBlockText = newState.getCurrentContent().getBlockForKey(currentBlockKey).getText();
     const cursorPosition = newState.getSelection().getStartOffset();
 
-    console.log(`Current Block Text: ${currentBlockText}`);
-    console.log(`Cursor Position: ${cursorPosition}`);
+    const isCommandMode = currentBlockText === ':check' && cursorPosition === 6;
 
-    const shouldActivateCommandMode = currentBlockText === ':check' && cursorPosition === 6;
-    if (shouldActivateCommandMode !== commandLineActiveRef.current) {
-      commandLineActiveRef.current = shouldActivateCommandMode;
-      // Force re-render by creating a new EditorState with the same content
-      setEditorState(EditorState.set(editorState, { allowUndo: true }));
+    console.log('isCommandMode', isCommandMode);
+
+    if (isCommandMode !== commandLineActive) {
+      setCommandLineActive(isCommandMode);
     }
 
-    if (shouldActivateCommandMode !== commandLineActive) {
-      setCommandLineActive(shouldActivateCommandMode);
-    }
+    console.log('commandLineActive', commandLineActive);
 
     setEditorState(newState);
   };
 
 
+
   const handleReturn = () => {
-    if (commandLineActive) {
-      const newString = "$ This is a facet title"; // Replace with the string you want
+    const contentState = editorState.getCurrentContent();
+    const selection = editorState.getSelection();
+    const currentBlockKey = selection.getStartKey();
+    const currentBlockText = contentState.getBlockForKey(currentBlockKey).getText();
+    const blockSelection = selection.merge({
+      anchorKey: currentBlockKey,
+      focusKey: currentBlockKey,
+      anchorOffset: 0,
+      focusOffset: currentBlockText.length, // Length of the current block text
+    }) as any;
+
+    let newString = "";
+    let newStep = step;
+
+    if (commandLineActive && step === 0) {
+      newString = "$ This is a facet title";
+      newStep = 1;
+    } else if (step === 1 && currentBlockText === "$ This is a facet title") {
+      newString = "the facet content inserted";
+      newStep = 0; // Reset to initial state
+    } else {
+      return 'not-handled';
+    }
+
+    const newContentState = Modifier.replaceText(contentState, blockSelection, newString);
+    const newEditorState = EditorState.push(editorState, newContentState, 'insert-characters');
+
+    // Update the editor state and exit command mode
+    setEditorState(newEditorState);
+    setCommandLineActive(false);
+    setStep(newStep);
+
+    return 'handled';
+  };
+
+  const keyBindingFn = (e: React.KeyboardEvent) => {
+    if (e.keyCode === 27) { // 27 is the key code for the Esc key
+      return 'delete-line';
+    }
+    return getDefaultKeyBinding(e);
+  };
+
+  const handleKeyCommand = (command: string, editorState: EditorState) => {
+    if (command === 'delete-line') {
       const contentState = editorState.getCurrentContent();
       const selection = editorState.getSelection();
       const currentBlockKey = selection.getStartKey();
-      const blockSelection = selection.merge({
-        anchorKey: currentBlockKey,
-        focusKey: currentBlockKey,
-        anchorOffset: 0,
-        focusOffset: 6, // Length of ":check"
-      }) as any;
+      const currentBlockText = contentState.getBlockForKey(currentBlockKey).getText();
 
-      const newContentState = Modifier.replaceText(contentState, blockSelection, newString);
-      const newEditorState = EditorState.push(editorState, newContentState, 'insert-characters');
-      setEditorState(newEditorState);
-      setCommandLineActive(false); // Exit command mode
-      return 'handled';
+      if (currentBlockText === "$ This is a facet title") {
+        const blockSelection = selection.merge({
+          anchorKey: currentBlockKey,
+          focusKey: currentBlockKey,
+          anchorOffset: 0,
+          focusOffset: currentBlockText.length, // Length of the current block text
+        }) as any;
+
+        const newContentState = Modifier.replaceText(contentState, blockSelection, "");
+        const newEditorState = EditorState.push(editorState, newContentState, 'delete-character');
+
+        setEditorState(newEditorState);
+        setCommandLineActive(false);  // Reset the commandLineActive state
+        return 'handled';
+      }
     }
     return 'not-handled';
   };
 
-
-
-
-
-  const blockRendererFn = (contentBlock: ContentBlock) => {
-    const type = contentBlock.getType();
-    const currentBlockKey = editorState.getSelection().getStartKey();
-    // Disable editing for all blocks except the command line
-    if (commandLineActive && contentBlock.getKey() !== currentBlockKey) {
-      return {
-        component: (props: { children: React.ReactNode }) => <EditorBlock {...props} />,
-        editable: false,
-      };
-    }
-    return DefaultDraftBlockRenderMap.get(type);
-  };
 
   const blockStyleFn = (contentBlock: ContentBlock) => {
     const currentBlockKey = editorState.getSelection().getStartKey();
@@ -130,23 +120,12 @@ const MyEditor: React.FC = () => {
       styles += 'bold-line ';
     }
 
-    if (commandLineActiveRef.current && contentBlock.getKey() === currentBlockKey) {
-      styles += 'command-block ';
-    }
-
-    if (commandLineActive && contentBlock.getKey() !== currentBlockKey) {
-      styles += 'darker-block';
-    }
-
     return styles.trim();
   };
-
-
 
   return (
     <div>
       <div
-        className={commandLineActive ? 'command-block' : ''}
         style={{ border: '1px solid black', minHeight: '400px', padding: '10px' }}
         onClick={() => editorRef.current?.focus()}
       >
@@ -154,9 +133,11 @@ const MyEditor: React.FC = () => {
           ref={editorRef}
           editorState={editorState}
           onChange={onChange}
-          blockRendererFn={blockRendererFn}
           blockStyleFn={blockStyleFn}
           handleReturn={handleReturn}
+          keyBindingFn={keyBindingFn}
+          handleKeyCommand={handleKeyCommand}
+
         />
       </div>
     </div>
