@@ -1,44 +1,181 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Editor, EditorState, ContentBlock, convertToRaw, convertFromRaw, Modifier, ContentState, genKey, getDefaultKeyBinding } from 'draft-js';
+import { Editor, EditorState, ContentBlock, convertToRaw, convertFromRaw, Modifier, ContentState, genKey, CharacterMetadata, getDefaultKeyBinding } from 'draft-js';
 import 'draft-js/dist/Draft.css';
+import { useParams } from 'react-router-dom';
+import { Article, Facet, ArticleContentBlock } from './types';
+import './App.css';
+import { List } from 'immutable';
+
 
 const MyEditor: React.FC = () => {
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [title, setTitle] = useState<string>('');
   const [date, setDate] = useState<string | null>(null);
+  const [id, setId] = useState<string>(''); // ADDED: state for article ID
 
   const editorRef = useRef<Editor>(null);
+  const { id: paramId } = useParams<{ id: string }>(); // ADDED: Get the article id from the route params
+
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Function to define facets based on the editor state
+  const defineFacets = (editorState: EditorState) => {
+    const contentState = editorState.getCurrentContent();
+    const blockArray = contentState.getBlocksAsArray();
+
+    let facets: Facet[] = [];
+    let currentFacet: Facet | null = null;
+
+    blockArray.forEach((block) => {
+      const text = block.getText();
+      if (text.startsWith('$')) {
+        if (currentFacet) {
+          facets.push(currentFacet);
+        }
+        currentFacet = { title: text.substring(1).trim(), content: '' };
+      } else if (currentFacet) {
+        currentFacet.content += text + '\n';
+      }
+    });
+
+    if (currentFacet) {
+      facets.push(currentFacet);
+    }
+
+    return facets;
+  };
+  // Convert editor state to content blocks
+  const editorStateToArticleContentBlock = (editorState: EditorState): ArticleContentBlock[] => {
+    const rawContent = convertToRaw(editorState.getCurrentContent());
+    const facets = defineFacets(editorState);
+
+    let contentBlocks: ArticleContentBlock[] = [];
+
+    // Add non-facet content and facets to contentBlocks
+    rawContent.blocks.forEach((block) => {
+      const text = block.text;
+      if (!text.startsWith('$')) {
+        contentBlocks.push(text);
+      } else {
+        const facet = facets.find(f => f.title === text.substring(1).trim());
+        if (facet) {
+          contentBlocks.push(facet);
+        }
+      }
+    });
+
+    return contentBlocks;
+  };
+
+  function convertArticleContentBlockToRaw(contentBlocks: ArticleContentBlock[]): ContentState {
+    let blocks: ContentBlock[] = [];
+
+    contentBlocks.forEach(block => {
+      if (typeof block === "string") {
+        blocks.push(new ContentBlock({
+          key: genKey(),
+          type: 'unstyled',
+          text: block,
+          characterList: List(Array(block.length).fill(CharacterMetadata.create())),
+        }));
+      } else {
+        // This assumes block is a Facet
+        const facet = block as Facet;
+        blocks.push(new ContentBlock({
+          key: genKey(),
+          type: 'header-one', // Or some custom block type for facet titles
+          text: "$ " + facet.title,
+          characterList: List(Array(("$ " + facet.title).length).fill(CharacterMetadata.create())),
+        }));
+        blocks.push(new ContentBlock({
+          key: genKey(),
+          type: 'unstyled',
+          text: facet.content,
+          characterList: List(Array(facet.content.length).fill(CharacterMetadata.create())),
+        }));
+      }
+    });
+
+    return ContentState.createFromBlockArray(blocks);
+  }
 
   const getCurrentDate = (): string => {
     const today = new Date();
-    return `${today.getFullYear()} ${today.toLocaleString('default', { month: 'short' })} ${today.getDate()}`;
+    const dateStr = `${today.getFullYear()} ${today.toLocaleString('default', { month: 'short' })} ${today.getDate()}`;
+    return dateStr;
+  };
+  // Save to localStorage when editor state or title changes
+  const updateToSave = (newEditorState: EditorState | null, newTitle: string) => {
+    const contentBlocks = newEditorState ? editorStateToArticleContentBlock(newEditorState) : [];
+    const currentDate = getCurrentDate();  // Get the current date
+
+    const oldData = localStorage.getItem(id);
+    const oldRawContent = oldData ? JSON.parse(oldData).content : null;
+    const oldTitle = oldData ? JSON.parse(oldData).title : null;
+
+    // Convert contentBlocks to a comparable format (e.g., string)
+    const newRawContentString = JSON.stringify(contentBlocks);
+
+    // Compare new and old data
+    if (newTitle !== oldTitle || newRawContentString !== JSON.stringify(oldRawContent)) {
+      // Update the date and editor state if title or content has changed
+      setDate(currentDate);
+
+      const dataToSave: Article = {
+        id: id,
+        title: newTitle,
+        content: contentBlocks,
+        date: currentDate
+      };
+
+      localStorage.setItem(id, JSON.stringify(dataToSave));
+    }
+  };
+
+  const handleTitleChange = (newTitle: string) => {
+    setTitle(newTitle);
+
+    if (!isInitializing) {  // Check if initialization is complete
+      updateToSave(editorState, newTitle); // Call updateToSave when title changes
+    }
   };
 
   useEffect(() => {
     let initialTitle = '';
     let initialEditorState = EditorState.createEmpty();
     let initialDate = '';
-    const savedContent = localStorage.getItem('editorContent');
 
-    if (savedContent) {
-      try {
-        const savedData = JSON.parse(savedContent);
+    // Determine if we are editing an existing article or creating a new one
+    if (paramId) {
+      // Editing existing article
+      setId(paramId);
 
-        if (savedData.content) {
-          const contentState = convertFromRaw(savedData.content);
-          initialEditorState = EditorState.createWithContent(contentState);
+      const savedContent = localStorage.getItem(paramId);
+
+      if (savedContent) {
+        try {
+          const savedData = JSON.parse(savedContent);
+
+          if (savedData.content) {
+            const contentState = convertArticleContentBlockToRaw(savedData.content);
+            initialEditorState = EditorState.createWithContent(contentState);
+          }
+
+          if (savedData.title) {
+            initialTitle = savedData.title;
+          }
+
+          if (savedData.date) {
+            initialDate = savedData.date;
+          }
+        } catch (error) {
+          console.error("Error loading content from local storage:", error);
         }
-
-        if (savedData.title) {
-          initialTitle = savedData.title;
-        }
-
-        if (savedData.date) {
-          initialDate = savedData.date;
-        }
-      } catch (error) {
-        console.error("Error loading content from local storage:", error);
       }
+    } else {
+      // Creating a new article
+      const newId = new Date().getTime().toString();
+      setId(newId);
     }
 
     setTitle(initialTitle);
@@ -49,8 +186,11 @@ const MyEditor: React.FC = () => {
       if (editorRef.current) {
         editorRef.current.focus();
       }
-    }, 100); // introducing a small delay before setting focus
-  }, []);
+    }, 100);
+
+    setIsInitializing(false);
+
+  }, [paramId]);
 
 
   const onChange = (newState: EditorState) => {
@@ -63,17 +203,10 @@ const MyEditor: React.FC = () => {
       newState = EditorState.push(newState, newContentState, 'insert-characters');
     }
     // Save to local storage.
-    const rawContent = convertToRaw(newState.getCurrentContent());
-    const currentDate = getCurrentDate();  // Get the current date
-    setDate(currentDate);  // Update the date state
 
-    const dataToSave = {
-      content: rawContent,
-      title: title,
-      date: currentDate
-    };
-
-    localStorage.setItem('editorContent', JSON.stringify(dataToSave));
+    if (!isInitializing) {  // Check if initialization is complete
+      updateToSave(newState, title); // Call updateToSave when editor state changes
+    }
     setEditorState(newState);
   };
 
@@ -110,13 +243,24 @@ const MyEditor: React.FC = () => {
   const blockStyleFn = (contentBlock: ContentBlock) => {
     const currentBlockKey = editorState!.getSelection().getStartKey();
     const text = contentBlock.getText();
+    const blockKey = contentBlock.getKey();
+    const firstBlockKey = editorState!.getCurrentContent().getFirstBlock().getKey();
     let styles = '';
 
+    if (blockKey === firstBlockKey) {
+      styles += 'article-title ';
+    }
+
     if (text.startsWith('$')) {
-      styles += 'bold-line ';
+      styles += 'facet-title ';
     }
 
     return styles.trim();
+  };
+
+  const isEditorEmpty = (editorState: EditorState) => {
+    const plainText = editorState.getCurrentContent().getPlainText();
+    return !plainText.trim().length;
   };
 
   if (!editorState) {
@@ -124,20 +268,15 @@ const MyEditor: React.FC = () => {
   }
 
   return (
-    <div>
-      <div>
-        <input
-          type="text"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="Enter your title here"
-        />
-      </div>
-      <div>{date}</div>
+    <div className="article">  {/* <-- Add this wrapper div */}
       <div
-        style={{ border: '1px solid black', minHeight: '400px', padding: '10px' }}
         onClick={() => editorRef.current?.focus()}
       >
+        {isEditorEmpty(editorState) && (
+          <div className='article-title-placeholder'>
+            Type title then start writing by Enter pressed.
+          </div>
+        )}
         <Editor
           ref={editorRef}
           editorState={editorState}
@@ -146,6 +285,7 @@ const MyEditor: React.FC = () => {
           handleReturn={handleReturn}
         />
       </div>
+
     </div>
   );
 };

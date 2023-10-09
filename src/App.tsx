@@ -1,15 +1,19 @@
-import React from 'react';
-import logo from './logo.svg';
 import './App.css';
-import MyEditor from './Article';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Article from './Article';
+import List from './List';
 
 function App() {
   return (
-    <div className="App">
-      <MyEditor />
-    </div>
+    <Router>
+      <div>
+        <Routes>
+          <Route path="/" element={<List />} />
+          <Route path="/article/:id" element={<Article />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
-
 
 export default App;
