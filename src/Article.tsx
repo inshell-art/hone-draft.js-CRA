@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Editor, EditorState, ContentBlock, convertToRaw, convertFromRaw, Modifier, ContentState, genKey, CharacterMetadata, getDefaultKeyBinding } from 'draft-js';
 import 'draft-js/dist/Draft.css';
 import { useParams } from 'react-router-dom';
-import { Article, Facet, ArticleContentBlock } from './types';
+import { Article, ArticleContentBlock, Facet } from './types';
 import './App.css';
 import { List } from 'immutable';
+
 
 
 const MyEditor: React.FC = () => {
@@ -104,6 +105,7 @@ const MyEditor: React.FC = () => {
     const dateStr = `${today.getFullYear()} ${today.toLocaleString('default', { month: 'short' })} ${today.getDate()}`;
     return dateStr;
   };
+
   // Save to localStorage when editor state or title changes
   const updateToSave = (newEditorState: EditorState | null, newTitle: string) => {
     const contentBlocks = newEditorState ? editorStateToArticleContentBlock(newEditorState) : [];
