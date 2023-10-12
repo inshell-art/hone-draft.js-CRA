@@ -23,15 +23,20 @@ function List() {
 
     const createNewArticle = () => {
         const id = new Date().getTime().toString();
-        const newArticle = {
+        const newArticle: Article = {
             id,
-            title: 'New Article',
-            content: '{}',  // Initial content structure (can be modified)
-            date: id
+            date: id,
+            articleContent: {
+                title: '',
+                facets: [],
+                nonFacet: ''
+            }  // Initial content structure (can be modified)
         };
         localStorage.setItem(id, JSON.stringify(newArticle));
-        navigate(`/article/${id}`);
+        const newTab = window.open(`/article/${id}`, '_blank');
+        newTab?.focus();
     };
+
 
     useEffect(() => {
         const fetchedArticles = fetchAllArticles();
@@ -45,7 +50,7 @@ function List() {
                 {articles.map((article) => (
                     <li key={article.id}>
                         <a href={`/article/${article.id}`} target="_blank" rel="noopener noreferrer">
-                            {article.title} - {article.date}
+                            - {article.date}
                         </a>
                     </li>
                 ))}
