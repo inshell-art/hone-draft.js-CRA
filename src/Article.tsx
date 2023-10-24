@@ -1,121 +1,152 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Editor, EditorState, ContentBlock, RichUtils, convertFromRaw, Modifier, ContentState, genKey, CharacterMetadata, getDefaultKeyBinding } from 'draft-js';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Editor, EditorState, ContentBlock, RichUtils, SelectionState, Modifier, ContentState, genKey, CharacterMetadata, getDefaultKeyBinding, DraftHandleValue } from 'draft-js';
 import 'draft-js/dist/Draft.css';
 import { useParams } from 'react-router-dom';
-import { Article, ArticleContent, Facet } from './types';
+import { Article, ArticleContent, Facet, ArticleRecord, ArticleContentRecord, FacetRecord } from './types';
 import './App.css';
-import { List } from 'immutable';
+import { Record, List } from 'immutable';
 
-function getBlockTypeFromText(text: string, index: number, currentFacet: Facet | null): string {
-  if (index === 0) {
-    return 'article-title';
-  }
-  if (text.startsWith('$')) {
-    return 'facet-title';
-  }
-  if (currentFacet && !text.startsWith('$')) {
-    return 'facet-content';
-  }
-  return 'non-facet';
+const ARTICLE_TITLE = 'article-title'; // Four custom block types
+const FACET_TITLE = 'facet-title';
+const FACET_CONTENT = 'facet-content';
+const NON_FACET = 'non-facet';
+const FACET_TITLE_SYMBOL = '$';
+
+const CHECK_STYLE = 'CHECK_STYLE';
+enum CheckStep {
+  ToInsertMostFacetTitle = 'toInsertMostFacetTitle',
+  ToInsertFacetContent = 'toInsertFacetContent'
 }
+const CHECK_COMMAND = ':check';
 
-function editorStateToArticleContent(editorState: EditorState): ArticleContent {
+const mostSimilarFacetTitle = 'Most similar facet title';
+const similarity: number = 0.74;
+const mostSimilarFacetTitleToInsert = ` ${mostSimilarFacetTitle} - ${similarity}`;
+const facetContentToInsert = 'Facet content 1\n Face content 2\n Facet content 3\n';
+
+
+// getArticleContentType, manage the mapping of block id to block type by state.
+const getArticleContentType = (state: EditorState): { [blockId: string]: string } => {
+  const contentState = state.getCurrentContent();
+  const blockArray = contentState.getBlocksAsArray();
+
+  let currentFacet: Facet | null = null;
+  const types: { [blockId: string]: string } = {};
+
+  blockArray.forEach((block, index) => {
+    const text = block.getText();
+    const blockId = block.getKey();
+
+    if (index === 0) {
+      types[blockId] = ARTICLE_TITLE;
+    } else if (text.startsWith(FACET_TITLE_SYMBOL)) {
+      types[blockId] = FACET_TITLE;
+      currentFacet = FacetRecord({ title: text.substring(1).trim(), content: '' });
+    } else if (currentFacet && !text.startsWith(FACET_TITLE_SYMBOL)) {
+      types[blockId] = FACET_CONTENT;
+    } else {
+      types[blockId] = NON_FACET;
+    }
+  });
+
+  return types;
+};
+
+const editorStateToArticleContent = (editorState: EditorState): ArticleContent => {
+  // Get the custom block types using getArticleContentType
+  const customBlockTypes = getArticleContentType(editorState);
   const contentState = editorState.getCurrentContent();
   const blockArray = contentState.getBlocksAsArray();
 
   let title = '';
-  let facets: Facet[] = [];
-  let currentFacet: Facet | null = null;
+  let facets = List<Facet>(); // Using Immutable List<Facet> instead of array
+  let currentFacet: Facet | null = null; // Using Facet from Immutable.js
   let nonFacet = '';
-
-  let currentFacetContentLines: string[] = []; // Temporary array for facet content
-  let nonFacetLines: string[] = []; // Temporary array for nonFacet
-
-  let type = ''; // Define type outside the loop for scope reasons
+  let currentFacetContentLines: string[] = [];
+  let nonFacetLines: string[] = [];
 
   blockArray.forEach((block, index) => {
     const text = block.getText();
-    type = getBlockTypeFromText(text, index, currentFacet); // Update type in each iteration
+    const blockId = block.getKey();
+    const type = customBlockTypes[blockId]; // Use the custom type from the mapping
 
-    if (type === 'article-title') {
+    if (type === ARTICLE_TITLE) {
       title = text;
-    }
-    if (type === 'facet-title') {
+    } else if (type === FACET_TITLE) {
       if (currentFacet) {
-        currentFacet.content = currentFacetContentLines.join('\n');
-        facets.push(currentFacet);
+        currentFacet = currentFacet.set('content', currentFacetContentLines.join('\n')); // Using Immutable.js set
+        facets = facets.push(currentFacet); // Using Immutable.js push
         currentFacetContentLines = [];
       }
-      currentFacet = { title: text.substring(1).trim(), content: '' } as Facet;
-    }
-    if (type === 'facet-content') {
+      currentFacet = FacetRecord({ title: text, content: '' });
+    } else if (type === FACET_CONTENT) {
       currentFacetContentLines.push(text);
-    }
-    if (type === 'non-facet') {
+    } else if (type === NON_FACET) {
       nonFacetLines.push(text);
     }
   });
 
-  // Handle the last facet after loop completion
-  if (currentFacet) {
-    (currentFacet as Facet).content = currentFacetContentLines.join('\n');
-    facets.push(currentFacet);
+  if (currentFacet !== null) {
+    currentFacet = (currentFacet as Facet).set('content', currentFacetContentLines.join('\n')); // Using Immutable.js set
+    facets = facets.push(currentFacet); // Using Immutable.js push
   }
 
   nonFacet = nonFacetLines.join('\n');
 
-  return {
+  // Create an Immutable Record for ArticleContent
+  const articleContent = ArticleContentRecord({
     title,
     nonFacet,
     facets
-  };
-}
+  });
 
-function articleContentToEditorState(articleContent: ArticleContent): EditorState {
+  return articleContent; // Return Immutable Record
+};
+
+const articleContentToEditorState = (articleContent: ArticleContent): EditorState => {
   const blocks: ContentBlock[] = [];
+  const createCharacterList = (length: number): List<CharacterMetadata> => {
+    return List(Array(length).fill(CharacterMetadata.create()));
+  };// Helper function to create a List of CharacterMetadata
 
   // Add title
   blocks.push(new ContentBlock({
     key: genKey(),
-    type: 'article-title',
-    text: articleContent.title,
-    characterList: List(Array(articleContent.title.length).fill(CharacterMetadata.create())),
+    type: ARTICLE_TITLE,
+    text: articleContent.get('title'),
+    characterList: createCharacterList(articleContent.get('title').length),
   }));
 
-  // Add non-facet
   // Add non-facet only if there's content
-  if (articleContent.nonFacet.trim() !== '') {
+  if (articleContent.get('nonFacet').trim() !== '') {
     blocks.push(new ContentBlock({
       key: genKey(),
-      type: 'non-facet',
-      text: articleContent.nonFacet,
-      characterList: List(Array(articleContent.nonFacet.length).fill(CharacterMetadata.create())),
+      type: NON_FACET,
+      text: articleContent.get('nonFacet'),
+      characterList: createCharacterList(articleContent.get('nonFacet').length),
     }));
   }
 
   // Add facets
-  articleContent.facets.forEach(facet => {
+  articleContent.get('facets').forEach((facet: Facet) => {
     blocks.push(new ContentBlock({
       key: genKey(),
-      type: 'facet-title',
-      text: `$ ${facet.title}`,
-      characterList: List(Array(facet.title.length + 2).fill(CharacterMetadata.create())),
+      type: FACET_TITLE,
+      text: facet.get('title'),
+      characterList: createCharacterList(facet.get('title').length),
     }));
 
     blocks.push(new ContentBlock({
       key: genKey(),
-      type: 'facet-content',
-      text: facet.content,
-      characterList: List(Array(facet.content.length).fill(CharacterMetadata.create())),
+      type: FACET_CONTENT,
+      text: facet.get('content'),
+      characterList: createCharacterList(facet.get('content').length),
     }));
-    console.log("article facet content");
-
   });
+
   const contentState = ContentState.createFromBlockArray(blocks);
   return EditorState.createWithContent(contentState);
-}
-
-
+};
 
 const MyEditor: React.FC = () => {
   const [editorState, setEditorState] = useState<EditorState | null>(null);
@@ -125,8 +156,9 @@ const MyEditor: React.FC = () => {
   const editorRef = useRef<Editor>(null);
   const { id: paramId } = useParams<{ id: string }>(); // ADDED: Get the article id from the route params
   const [isInitializing, setIsInitializing] = useState(true);
-  const [currentFacet, setCurrentFacet] = useState<Facet | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
+  const [editorIsLocked, setEditorIsLocked] = useState(false);  // New state to track if editor should be grey
+  const [checkStep, setCheckStep] = useState<CheckStep | null>(null);// Steps for check
 
   const getCurrentDate = (): string => {
     const today = new Date();
@@ -138,15 +170,114 @@ const MyEditor: React.FC = () => {
     const articleContent = newEditorState ? editorStateToArticleContent(newEditorState) : null; // New line
     const currentDate = getCurrentDate();  // Get the current date
 
-    const dataToSave: Article = {
-      id: id,
-      date: currentDate,
-      articleContent: articleContent  // Updated line
-    };
+    const dataToSave = ArticleRecord({
+      id,
+      currentDate,
+      articleContent,  // Updated line
+    });
 
+    localStorage.setItem(id, JSON.stringify(dataToSave.toJS()));
 
-    localStorage.setItem(id, JSON.stringify(dataToSave));
+  };
 
+  // Helper function to get lineStart, lineEnd, and currentLineText
+  const getLineBoundsAndText = (blockText: string, startOffset: number) => {
+    const lineStart = blockText.lastIndexOf('\n', startOffset - 1) + 1;
+    const lineEnd = blockText.indexOf('\n', startOffset);
+    const currentLineText = blockText.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+    return { lineStart, lineEnd, currentLineText };
+  };
+
+  // Helper function to force cursor to the specific position
+  const forceSelection = (newState: EditorState, specificPosition: number, currentBlockKey: string) => {
+    const newSelection = new SelectionState({
+      anchorKey: currentBlockKey,
+      anchorOffset: specificPosition,
+      focusKey: currentBlockKey,
+      focusOffset: specificPosition,
+    });
+    return EditorState.forceSelection(newState, newSelection);
+  };
+
+  // Helper function to replace text, apply inline style and move cursor to the end of the line
+  const handleCheckExecution = (
+    newState: EditorState,
+    textToReplace: string,
+    lineStart: number,
+    currentBlockKey: string,
+    currentLineText: string
+  ): EditorState => {
+    let newContentState: ContentState = Modifier.replaceText(
+      newState.getCurrentContent(),
+      new SelectionState({
+        anchorKey: currentBlockKey,
+        anchorOffset: lineStart,
+        focusKey: currentBlockKey,
+        focusOffset: lineStart + currentLineText.length,
+      }),
+      textToReplace
+    );
+    let updatedState: EditorState = EditorState.push(newState, newContentState, 'insert-characters');
+
+    // Style textToReplace with CHECK_STYLE when textToReplace is CHECK_COMMAND and mostSimilarFacetTitleToInsert
+    if (textToReplace === CHECK_COMMAND || textToReplace === mostSimilarFacetTitleToInsert) {
+      newContentState = Modifier.applyInlineStyle(
+        updatedState.getCurrentContent(),
+        new SelectionState({
+          anchorKey: currentBlockKey,
+          anchorOffset: lineStart,
+          focusKey: currentBlockKey,
+          focusOffset: lineStart + textToReplace.length,
+        }),
+        CHECK_STYLE
+      );
+      updatedState = EditorState.push(updatedState, newContentState, 'change-inline-style');
+    }
+
+    // Move the cursor to the end of the line
+    updatedState = forceSelection(updatedState, lineStart + textToReplace.length, currentBlockKey);
+
+    return updatedState;
+  };
+
+  // Helper function to remove the checkedValue and the CHECK_STYLE, and move cursor to the beginning of the line
+  const handleCheckQuit = (
+    newState: EditorState,
+    lineStart: number,
+    checkedValue: string,
+    currentBlockKey: string,
+    styleToRemove: string
+  ): EditorState => {
+    // Remove the inline style
+    let newContentState: ContentState = Modifier.removeInlineStyle(
+      newState.getCurrentContent(),
+      new SelectionState({
+        anchorKey: currentBlockKey,
+        anchorOffset: lineStart,
+        focusKey: currentBlockKey,
+        focusOffset: lineStart + checkedValue.length,
+      }),
+      styleToRemove
+    );
+    let updatedState: EditorState = EditorState.push(newState, newContentState, 'change-inline-style');
+
+    // Remove the checkedValue
+    newContentState = Modifier.removeRange(
+      updatedState.getCurrentContent(),
+      new SelectionState({
+        anchorKey: currentBlockKey,
+        anchorOffset: lineStart,
+        focusKey: currentBlockKey,
+        focusOffset: lineStart + checkedValue.length,
+      }),
+      'backward'
+    );
+    updatedState = EditorState.push(updatedState, newContentState, 'remove-range');
+
+    // Move the cursor to the beginning of the line
+    updatedState = forceSelection(updatedState, lineStart, currentBlockKey);
+
+    return updatedState;
   };
 
   useEffect(() => {
@@ -154,11 +285,23 @@ const MyEditor: React.FC = () => {
 
     if (paramId) {
       const savedContent = localStorage.getItem(paramId);
-
       if (savedContent) {
         try {
-          const savedData: Article = JSON.parse(savedContent);
-          initialArticle = savedData;
+          const savedDataJS = JSON.parse(savedContent);
+          const facetsList = List(savedDataJS.articleContent.facets.map(FacetRecord));
+          const savedData: Article = ArticleRecord({
+            id: savedDataJS.id,
+            date: savedDataJS.date,
+            articleContent: ArticleContentRecord({
+              ...savedDataJS.articleContent,
+              facets: facetsList
+            })
+          });
+          initialArticle = ArticleRecord({
+            id: savedData.get('id'),
+            date: savedData.get('date'),
+            articleContent: ArticleContentRecord(savedData.get('articleContent'))
+          });
         } catch (error) {
           console.error("Error loading content from local storage:", error);
         }
@@ -166,20 +309,21 @@ const MyEditor: React.FC = () => {
       setId(paramId);
     } else {
       const newId = new Date().getTime().toString();
-      setId(newId);// we create a new id already 
-      updateToSave(EditorState.createEmpty());
-
+      setId(newId);
     }
 
-    if (initialArticle && initialArticle.articleContent) {
-      const initialEditorState = articleContentToEditorState(initialArticle.articleContent); // Your new function
-      setTitle(initialArticle.articleContent.title);
-      setDate(initialArticle.date);
+    if (initialArticle && initialArticle.get('articleContent')) {
+      const initialEditorState = articleContentToEditorState(initialArticle.get('articleContent'));
+      setTitle(initialArticle.get('articleContent').title);
+      setDate(initialArticle.get('date'));
       setEditorState(initialEditorState);
     } else {
       const emptyState = EditorState.createEmpty();
       setEditorState(emptyState);
-      updateToSave(emptyState); // Save the initial empty state
+      // Only save the initial empty state if paramId was not provided
+      if (!paramId) {
+        updateToSave(emptyState);
+      }
     }
 
     setIsInitializing(false);
@@ -202,94 +346,129 @@ const MyEditor: React.FC = () => {
   }, []);
 
   const onChange = (newState: EditorState) => {
-    // Autofill 'check' after ':'.
-    const currentBlockText = newState.getCurrentContent().getBlockForKey(newState.getSelection().getStartKey()).getText();
     const currentBlockKey = newState.getSelection().getStartKey();
-    const currentBlockIndex = newState.getCurrentContent().getBlockMap().keySeq().indexOf(currentBlockKey);
+    const currentBlockText = newState.getCurrentContent().getBlockForKey(currentBlockKey).getText();
+    const currentSelection = newState.getSelection();
 
-    if (currentBlockText.startsWith(':') && newState.getSelection().getStartOffset() === 1) {
-      const contentState = newState.getCurrentContent();
-      const selection = newState.getSelection();
-      const newContentState = Modifier.insertText(contentState, selection, 'check');
-      newState = EditorState.push(newState, newContentState, 'insert-characters');
+    let updatedState = newState;  // Initialize to newState
+    let newContentState: ContentState;
+
+    // Toggle block type to custom block type
+    const customBlockTypeMapping = getArticleContentType(newState);
+    const currentCustomBlockType = customBlockTypeMapping[currentBlockKey];
+    const blockType = newState.getCurrentContent().getBlockForKey(currentSelection.getStartKey()).getType();
+    if (currentCustomBlockType !== blockType) {
+      updatedState = RichUtils.toggleBlockType(updatedState, currentCustomBlockType);
     }
 
-    // Update types of blocks
-    // Get the current block type
-    const selection = newState.getSelection();
-    const blockType = newState
-      .getCurrentContent()
-      .getBlockForKey(selection.getStartKey())
-      .getType();
-    // Determine the new block type based on the text
-    const newBlockType = getBlockTypeFromText(currentBlockText, currentBlockIndex, currentFacet);  // Pass the currentFacet state
-    // If the new block type is different, toggle it
-    if (newBlockType !== blockType) {
-      newState = RichUtils.toggleBlockType(newState, newBlockType);
+    const startOffset = currentSelection.getStartOffset();
+    const { lineStart, lineEnd, currentLineText } = getLineBoundsAndText(currentBlockText, startOffset);
+
+    // Initial check execution when the user types ':check' at the beginning of the line
+    if (currentLineText === CHECK_COMMAND && currentCustomBlockType === FACET_CONTENT) {
+      setEditorIsLocked(true);
+      // run the handleCheckExecution function with CHECK_COMMAND
+      updatedState = handleCheckExecution(newState, CHECK_COMMAND, lineStart, currentBlockKey, currentLineText);
+
+      setCheckStep(CheckStep.ToInsertMostFacetTitle);
+
+      setEditorState(updatedState);
     }
 
-    if (newBlockType === 'facet-title') {
-      setCurrentFacet({ title: currentBlockText.substring(1).trim(), content: '' });
-    }
-    console.log(currentFacet)
 
-    // Save to local storage.
-    if (!isInitializing) { // Check if initialization is complete
+    // Existing logic for saving to local storage
+    if (!isInitializing) {  // Check if initialization is complete
       // Clear any existing timeout
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-
       // Set a new timeout to save after a delay
       saveTimeoutRef.current = window.setTimeout(() => {
-        updateToSave(newState);
-      }, 1000); // this sets a delay of 1 second, adjust as needed
+        updateToSave(updatedState);
+      }, 1000);  // Delay of 1 second
     }
 
-    setEditorState(newState);
+    setEditorState(updatedState); // Final update to the EditorState
   };
 
-  // The minimalistic command line.
-  const handleReturn = (e: any, editorState: EditorState) => {
-    const currentBlockText = editorState.getCurrentContent().getBlockForKey(editorState.getSelection().getStartKey()).getText();
-    let newEditorState;
+  const myKeyBindingFn = useCallback((e: React.KeyboardEvent<{}>): string | null => {
+    if (editorIsLocked) {
+      if (e.key === 'Enter') {
+        return 'execute-check';
+      }
+      if (e.key === 'Backspace' || e.key === 'Escape') {
+        return 'quit-check';
+      }
+      return 'noop'; // Do nothing for other keys
+    }
+    return getDefaultKeyBinding(e);
+  }, [editorIsLocked]);
 
-    if (currentBlockText === ":check") {
-      const selection = editorState.getSelection();
-      const blockSelection = selection.merge({
-        anchorOffset: 0,
-        focusOffset: currentBlockText.length,
-      }) as any;
-      newEditorState = EditorState.push(editorState, Modifier.replaceText(editorState.getCurrentContent(), blockSelection, "$ this is the facet title"), 'change-block-data');
-    } else if (currentBlockText === "$ this is the facet title") {
-      const multiLineText = "the facet contents are a lot, \n and they are all inserted.";
+  const handleKeyCommand = (command: string, newState: EditorState): DraftHandleValue => {
+    const currentBlockKey = newState.getSelection().getStartKey();
+    const currentBlockText = newState.getCurrentContent().getBlockForKey(currentBlockKey).getText();
+    const currentSelection = newState.getSelection();
+    const startOffset = currentSelection.getStartOffset();
+    const { lineStart, lineEnd, currentLineText } = getLineBoundsAndText(currentBlockText, startOffset);
 
-      const selection = editorState.getSelection();
-      const blockSelection = selection.merge({
-        anchorOffset: 0,
-        focusOffset: currentBlockText.length,
-      }) as any;
-      newEditorState = EditorState.push(editorState, Modifier.replaceText(editorState.getCurrentContent(), blockSelection, multiLineText), 'change-block-data');
-    } else {
-      return 'not-handled';
+    let updatedState = newState;
+
+    if (command === 'noop') {
+      return 'handled';  // Do nothing
     }
 
-    setEditorState(newEditorState);
-    return 'handled';
+    if (command === 'execute-check') {
+      if (checkStep === CheckStep.ToInsertMostFacetTitle) {
+        const updatedState = handleCheckExecution(newState, mostSimilarFacetTitleToInsert, lineStart, currentBlockKey, currentLineText);
+        setEditorState(updatedState);
+        setCheckStep(CheckStep.ToInsertFacetContent);
+      } else if (checkStep === CheckStep.ToInsertFacetContent) {
+        const updatedState = handleCheckExecution(newState, facetContentToInsert, lineStart, currentBlockKey, currentLineText);
+        setEditorState(updatedState);
+        setCheckStep(null);
+        setEditorIsLocked(false);
+      }
+      return 'handled';
+    }
+
+    if (command === 'quit-check') {
+      if (checkStep === CheckStep.ToInsertMostFacetTitle) {
+        updatedState = handleCheckQuit(newState, lineStart, CHECK_COMMAND, currentBlockKey, CHECK_STYLE);
+      } else if (checkStep === CheckStep.ToInsertFacetContent) {
+        updatedState = handleCheckQuit(newState, lineStart, mostSimilarFacetTitleToInsert, currentBlockKey, CHECK_STYLE);
+      }
+
+      setEditorState(updatedState);
+      setCheckStep(null);
+      setEditorIsLocked(false);
+
+      return 'handled';
+    }
+
+
+    return 'not-handled';
   };
+
 
   const blockStyleFn = (contentBlock: ContentBlock) => {
     const type = contentBlock.getType();
-    let styles = '';
 
-    if (type === 'article-title') {
-      return 'article-title';
-    }
-    if (type === 'facet-title') {
-      return 'facet-title';
+    if (type === ARTICLE_TITLE) {
+      return ARTICLE_TITLE;
     }
 
-    return type.trim();
+    if (type === FACET_TITLE) {
+      return FACET_TITLE;
+    }
+
+    return type.trim(); // or any other logic you may have
+  };
+
+  const styleMap = {
+    'CHECK_STYLE': {
+      color: '#008F11',
+      fontWeight: '400'
+    },
   };
 
   const isEditorEmpty = (editorState: EditorState) => {
@@ -307,19 +486,19 @@ const MyEditor: React.FC = () => {
     return 'handled';
   };
 
-
   if (!editorState) {
     return null; // Stop here if editorState is not yet set.
   }
 
+
   return (
-    <div className="article">  {/* <-- Add this wrapper div */}
+    <div className={`article ${editorIsLocked ? 'locked' : ''}`}>  {/* <-- Add this wrapper div */}
       <div
         onClick={() => editorRef.current?.focus()}
       >
         {isEditorEmpty(editorState) && (
           <div className='article-title-placeholder'>
-            Type title then start writing by Enter pressed.
+            Type title and start writing by Enter pressed.
           </div>
         )}
         <Editor
@@ -328,8 +507,10 @@ const MyEditor: React.FC = () => {
           editorState={editorState}
           onChange={onChange}
           blockStyleFn={blockStyleFn}
-          handleReturn={handleReturn}
           handlePastedText={handlePastedText}  // add this line
+          keyBindingFn={myKeyBindingFn}
+          customStyleMap={styleMap}
+          handleKeyCommand={handleKeyCommand}
         />
       </div>
 

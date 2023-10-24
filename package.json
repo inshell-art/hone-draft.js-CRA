@@ -1,6 +1,9 @@
 {
   "name": "hone",
   "version": "0.1.0",
+  "resolutions": {
+    "postcss": "8.4.31"
+  },
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -11,15 +14,19 @@
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
     "draft-js": "^0.11.7",
+    "immutable": "^5.0.0-beta.4",
     "keycode": "^2.2.1",
+    "postcss": "^8.4.31",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0",
     "react-scripts": "^5.0.1",
+    "resolve-url-loader": "^5.0.0",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "preinstall": "npx npm-force-resolutions",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -44,6 +51,7 @@
     ]
   },
   "devDependencies": {
-    "@types/draft-js": "^0.11.12"
+    "@types/draft-js": "^0.11.12",
+    "npm-force-resolutions": "^0.0.10"
   }
 }

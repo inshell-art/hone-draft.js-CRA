@@ -6,13 +6,18 @@ body {
   position: relative;
   color: #ffffff;
   font-family: 'Source Code Pro', monospace;
-  font-weight: 200;
+  font-weight: 300;
   font-size: 16px;
   width: 700px;
   margin: 0 auto;
   margin-bottom: 30px;
   padding-top: 30px;
   line-height: 1.6;
+}
+
+.article.locked {
+  color: #5b5b5b;
+  pointer-events: none;
 }
 
 .article-title-placeholder {
@@ -24,10 +29,12 @@ body {
 .article-title {
   font-size: 24px;
   padding-bottom: 30px;
-  font-weight: 200;
+  font-weight: 300;
 }
 
 .facet-title {
-  font-weight: 400;
+  font-weight: 500;
   font-size: 16px;
+  padding-top: 16px;
+  padding-bottom: 16px;
 }
