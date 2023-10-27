@@ -24,6 +24,8 @@ const similarity: number = 0.74;
 const mostSimilarFacetTitleToInsert = ` ${mostSimilarFacetTitle} - ${similarity}`;
 const facetContentToInsert = 'Facet content 1\n Face content 2\n Facet content 3\n';
 
+let prevCharacterCount: number | null = null;  // Previous character count for saving detection
+
 
 // getArticleContentType, manage the mapping of block id to block type by state.
 const getArticleContentType = (state: EditorState): { [blockId: string]: string } => {
@@ -41,7 +43,7 @@ const getArticleContentType = (state: EditorState): { [blockId: string]: string 
       types[blockId] = ARTICLE_TITLE;
     } else if (text.startsWith(FACET_TITLE_SYMBOL)) {
       types[blockId] = FACET_TITLE;
-      currentFacet = FacetRecord({ title: text.substring(1).trim(), content: '' });
+      currentFacet = FacetRecord({ title: text, content: '' });
     } else if (currentFacet && !text.startsWith(FACET_TITLE_SYMBOL)) {
       types[blockId] = FACET_CONTENT;
     } else {
@@ -148,6 +150,7 @@ const articleContentToEditorState = (articleContent: ArticleContent): EditorStat
   return EditorState.createWithContent(contentState);
 };
 
+
 const MyEditor: React.FC = () => {
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [title, setTitle] = useState<string>('');
@@ -162,22 +165,30 @@ const MyEditor: React.FC = () => {
 
   const getCurrentDate = (): string => {
     const today = new Date();
-    const dateStr = `${today.getFullYear()} ${today.toLocaleString('default', { month: 'short' })} ${today.getDate()}`;
+    const dateStr = `${today.getFullYear()} ${today.toLocaleString('default', { month: 'short' })} ${today.getDate()} ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
     return dateStr;
   };
 
   const updateToSave = (newEditorState: EditorState | null) => {
-    const articleContent = newEditorState ? editorStateToArticleContent(newEditorState) : null; // New line
-    const currentDate = getCurrentDate();  // Get the current date
+    if (newEditorState) {
+      const newCharacterCount = newEditorState.getCurrentContent().getPlainText().length;
 
-    const dataToSave = ArticleRecord({
-      id,
-      currentDate,
-      articleContent,  // Updated line
-    });
+      if (prevCharacterCount !== newCharacterCount) {
+        prevCharacterCount = newCharacterCount;
+        const articleContent = editorStateToArticleContent(newEditorState);
+        const currentDate = getCurrentDate();
 
-    localStorage.setItem(id, JSON.stringify(dataToSave.toJS()));
+        const dataToSave = ArticleRecord({
+          id,
+          date: currentDate,
+          articleContent,
+        });
 
+        localStorage.setItem(id, JSON.stringify(dataToSave.toJS()));
+      }
+    } else {
+      console.error('newEditorState in updateToSave is null');
+    }
   };
 
   // Helper function to get lineStart, lineEnd, and currentLineText
@@ -280,6 +291,31 @@ const MyEditor: React.FC = () => {
     return updatedState;
   };
 
+  // Helper function to check if the first visible character after current cursor is in a "FACET_TITLE" block or none
+  const isFirstVisibleCharInFacetTitleOrNone = (editorState: EditorState): boolean => {
+    const getStartKey = editorState.getSelection().getStartKey();
+    const getStartOffset = editorState.getSelection().getStartOffset();
+    const contentState = editorState.getCurrentContent();
+    const blockTypes = getArticleContentType(editorState);
+    let startChecking = false;
+
+    for (const [i, block] of contentState.getBlocksAsArray().entries()) {
+      if (block.getKey() === getStartKey) {
+        startChecking = true;
+      }
+      if (!startChecking) continue;
+
+      const startOffset = block.getKey() === getStartKey ? getStartOffset : 0;
+      const firstVisibleCharIndex = block.getText().slice(startOffset).search(/\S/);
+
+      if (firstVisibleCharIndex === -1) continue;
+
+      return blockTypes[block.getKey()] === FACET_TITLE;
+    }
+
+    return true;
+  };
+
   useEffect(() => {
     let initialArticle: Article | null = null;
 
@@ -317,6 +353,8 @@ const MyEditor: React.FC = () => {
       setTitle(initialArticle.get('articleContent').title);
       setDate(initialArticle.get('date'));
       setEditorState(initialEditorState);
+
+      prevCharacterCount = initialEditorState.getCurrentContent().getPlainText().length;// For saving detection
     } else {
       const emptyState = EditorState.createEmpty();
       setEditorState(emptyState);
@@ -346,28 +384,29 @@ const MyEditor: React.FC = () => {
   }, []);
 
   const onChange = (newState: EditorState) => {
-    const currentBlockKey = newState.getSelection().getStartKey();
-    const currentBlockText = newState.getCurrentContent().getBlockForKey(currentBlockKey).getText();
-    const currentSelection = newState.getSelection();
-
     let updatedState = newState;  // Initialize to newState
-    let newContentState: ContentState;
 
-    // Toggle block type to custom block type
-    const customBlockTypeMapping = getArticleContentType(newState);
-    const currentCustomBlockType = customBlockTypeMapping[currentBlockKey];
-    const blockType = newState.getCurrentContent().getBlockForKey(currentSelection.getStartKey()).getType();
-    if (currentCustomBlockType !== blockType) {
-      updatedState = RichUtils.toggleBlockType(updatedState, currentCustomBlockType);
+    const currentBlockKey = updatedState.getSelection().getStartKey();
+    const currentBlockText = updatedState.getCurrentContent().getBlockForKey(currentBlockKey).getText();
+    const currentSelection = updatedState.getSelection();
+
+    // Toggle block type to ArticleContent block type
+    const articleContentTypeMapping = getArticleContentType(updatedState);
+    const currentBlockTypeInArticleContent = articleContentTypeMapping[currentBlockKey];
+    const currentBlockType = updatedState.getCurrentContent().getBlockForKey(currentSelection.getStartKey()).getType();
+    if (currentBlockTypeInArticleContent !== currentBlockType) {
+      updatedState = RichUtils.toggleBlockType(updatedState, currentBlockTypeInArticleContent);
     }
 
     const startOffset = currentSelection.getStartOffset();
     const { lineStart, lineEnd, currentLineText } = getLineBoundsAndText(currentBlockText, startOffset);
 
-    // Initial check execution when the user types ':check' at the beginning of the line
-    if (currentLineText === CHECK_COMMAND && currentCustomBlockType === FACET_CONTENT) {
+    // Initial check command when the user types ':check' at the beginning of the line in the bottom of the facet or the article
+    if (currentLineText === CHECK_COMMAND
+      && currentBlockTypeInArticleContent === FACET_CONTENT
+      && isFirstVisibleCharInFacetTitleOrNone(updatedState)) {
       setEditorIsLocked(true);
-      // run the handleCheckExecution function with CHECK_COMMAND
+
       updatedState = handleCheckExecution(newState, CHECK_COMMAND, lineStart, currentBlockKey, currentLineText);
 
       setCheckStep(CheckStep.ToInsertMostFacetTitle);
@@ -375,8 +414,7 @@ const MyEditor: React.FC = () => {
       setEditorState(updatedState);
     }
 
-
-    // Existing logic for saving to local storage
+    // Save the updated state if it's not initializing
     if (!isInitializing) {  // Check if initialization is complete
       // Clear any existing timeout
       if (saveTimeoutRef.current) {
@@ -483,6 +521,8 @@ const MyEditor: React.FC = () => {
     const newEditorState = EditorState.push(editorState, newContentState, 'insert-characters');
 
     setEditorState(newEditorState);
+
+    updateToSave(newEditorState);
     return 'handled';
   };
 
