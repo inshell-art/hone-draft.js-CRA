@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Article, Facet, ArticleContentRecord, ArticleRecord } from './types';
 import { List } from 'immutable';
-
-
+import './App.css';
 
 function ArticleList() {
     const [articles, setArticles] = useState<Article[]>([]);
@@ -32,7 +31,6 @@ function ArticleList() {
         return fetchedArticles;
     };
 
-
     const createNewArticle = () => {
         const id = new Date().getTime().toString();
         const newArticle = ArticleRecord({
@@ -58,15 +56,26 @@ function ArticleList() {
     return (
         <div>
             <button onClick={createNewArticle}>Create Article</button>
-            <ul>
+            <div>
                 {articles.map((article) => (
-                    <li key={article.get('id')}>
-                        <a href={`/article/${article.get('id')}`} target="_blank" rel="noopener noreferrer">
-                            - {article.get('date')}
+                    <div key={article.get('id')} style={{ marginBottom: '20px' }}>
+                        <a
+                            href={`/article/${article.get('id')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none' }}
+                        >
+                            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'blue' }}>
+                                {article.getIn(['articleContent', 'title']) || 'Untitled Article'}
+                            </div>
                         </a>
-                    </li>
+                        <div style={{ fontSize: '14px', color: 'grey' }}>
+                            - {article.get('date')}
+                        </div>
+                    </div>
                 ))}
-            </ul>
+            </div>
+
         </div>
     );
 }
