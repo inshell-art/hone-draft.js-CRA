@@ -5,9 +5,10 @@ import { useParams } from 'react-router-dom';
 import { Article, ArticleContent, Facet, ArticleRecord, ArticleContentRecord, FacetRecord } from './types';
 import './App.css';
 import { Record, List } from 'immutable';
+import { getCurrentDate } from './utilities';
 
 const ARTICLE_TITLE = 'article-title'; // Four custom block types
-const FACET_TITLE = 'facet-title';
+const FACET_TITLE = 'article-facet-title';
 const FACET_CONTENT = 'facet-content';
 const NON_FACET = 'non-facet';
 const FACET_TITLE_SYMBOL = '$';
@@ -24,7 +25,7 @@ const similarity: number = 0.74;
 const mostSimilarFacetTitleToInsert = ` ${mostSimilarFacetTitle} - ${similarity}`;
 const facetContentToInsert = 'Facet content 1\n Face content 2\n Facet content 3\n';
 
-let prevCharacterCount: number | null = null;  // Previous character count for saving detection
+let prevCharacterCount: number | null = 0;  // Previous character count for saving detection
 
 
 // getArticleContentType, manage the mapping of block id to block type by state.
@@ -163,11 +164,7 @@ const MyEditor: React.FC = () => {
   const [editorIsLocked, setEditorIsLocked] = useState(false);  // New state to track if editor should be grey
   const [checkStep, setCheckStep] = useState<CheckStep | null>(null);// Steps for check
 
-  const getCurrentDate = (): string => {
-    const today = new Date();
-    const dateStr = `${today.getFullYear()} ${today.toLocaleString('default', { month: 'short' })} ${today.getDate()} ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
-    return dateStr;
-  };
+
 
   const updateToSave = (newEditorState: EditorState | null) => {
     if (newEditorState) {
@@ -321,6 +318,7 @@ const MyEditor: React.FC = () => {
 
     if (paramId) {
       const savedContent = localStorage.getItem(paramId);
+
       if (savedContent) {
         try {
           const savedDataJS = JSON.parse(savedContent);

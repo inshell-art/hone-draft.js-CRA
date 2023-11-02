@@ -1,15 +1,15 @@
 body {
   background-color: #1A1919;
+  font-weight: 300;
+  font-family: 'Source Code Pro', monospace;
+  width: 700px;
+  margin: 0 auto;
 }
 
 .article {
   position: relative;
-  color: #ffffff;
-  font-family: 'Source Code Pro', monospace;
-  font-weight: 300;
+  color: #BABABA;
   font-size: 16px;
-  width: 700px;
-  margin: 0 auto;
   margin-bottom: 30px;
   padding-top: 30px;
   line-height: 1.6;
@@ -29,12 +29,99 @@ body {
 .article-title {
   font-size: 24px;
   padding-bottom: 30px;
-  font-weight: 300;
 }
 
-.facet-title {
+.article-facet-title {
   font-weight: 500;
   font-size: 16px;
   padding-top: 16px;
   padding-bottom: 16px;
+}
+
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-top: 30px;
+}
+
+.list-header-left {
+  display: flex;
+  align-items: flex-end;
+}
+
+.list-header-title {
+  font-size: 40px;
+  color: #BABABA;
+  margin-right: 20px;
+}
+
+.list-header-export {
+  font-size: 16px;
+  color: #008F11;
+  text-decoration: none;
+  border-bottom: 0.5px solid #008F11;
+}
+
+.list-header-button {
+  background-color: #D3D3D3;
+  color: #008F11;
+  font-size: 16px;
+  padding: 7px 20px;
+  border: none;
+  cursor: pointer;
+}
+
+
+.list-article-container {
+  margin-bottom: 30px;
+}
+
+.list-article-item {
+  margin-bottom: 20px;
+  position: relative;
+  padding-top: 20px;
+}
+
+.list-article-title a {
+  text-decoration: none;
+  color: #008F11;
+  font-size: 24px;
+}
+
+.list-article-date {
+  font-size: 16px;
+  color: #5B5B5B;
+}
+
+
+.facet-container {
+  padding-top: 30px;
+}
+
+.facet-title {
+  font-size: 24px;
+  padding-bottom: 30px;
+  color: #BABABA;
+  font-weight: 300;
+}
+
+.facet-item {
+  font-size: 16px;
+  color: #BABABA;
+  font-weight: 500;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.facet-subtitle {
+  color: #BABABA;
+}
+
+.facet-link a {
+  color: #008F11;
+  text-decoration: none;
+  font-weight: 300;
 }

@@ -2,8 +2,11 @@ import { List, Record } from 'immutable';
 
 // Define the Facet as an Immutable Record
 export const FacetRecord = Record({
+  articleTitle: '',
+  articleId: '',
   title: '',
   content: '',
+  date: '',
 });
 export interface Facet extends ReturnType<typeof FacetRecord> {}
 
