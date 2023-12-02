@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facet, Article, FacetRecord } from './types';
+import { Facet, Article } from './types';
 import { fetchAllArticles } from './utilities';
-
+/*
 function FACETs() {
     const [facets, setFacets] = useState<Facet[]>([]);
 
@@ -45,3 +45,4 @@ function FACETs() {
 }
 
 export default FACETs;
+*/

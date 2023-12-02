@@ -1,27 +1,45 @@
-import { List, Record } from 'immutable';
+import React from 'react';
 
-// Define the Facet as an Immutable Record
-export const FacetRecord = Record({
-  articleTitle: '',
-  articleId: '',
-  title: '',
-  content: '',
-  date: '',
-});
-export interface Facet extends ReturnType<typeof FacetRecord> {}
+// #region interfaces for the data model
+export type Article = {
+  articleId: string;
+  date?: string;
+  title?: string;
+  nonFacetContent?: string;
+}
 
-// Define the ArticleContent as an Immutable Record
-export const ArticleContentRecord = Record({
-  title: '',
-  nonFacet: '',
-  facets: List<Facet>(),
-});
-export interface ArticleContent extends ReturnType<typeof ArticleContentRecord> {}
+export type Facet = {
+  facetId: string;
+  date?: string;
+  title: string;
+  content?: string;
+}
 
-// Define the Article as an Immutable Record
-export const ArticleRecord = Record({
-  id: '',
-  date: '',
-  articleContent: null as ArticleContent | null,
-});
-export interface Article extends ReturnType<typeof ArticleRecord> {}
+export type ArticleFacetLink = {
+  articleId: string;
+  facetId: string;
+  orderIndex: number;
+}
+
+export type Storage = {
+  articles: { [articleId: string]: Article };
+  facets: { [facetId: string]: Facet };
+  articleFacetLinks: ArticleFacetLink[];
+};
+// #endregion
+
+// #region Contexts for the state model
+type ArticleIdContextType = {
+  articleId: string | null;
+  setArticleId: React.Dispatch<React.SetStateAction<string | null>>;
+};
+
+type FacetIdContextType = {
+  facetId: string | null;
+  setFacetId: React.Dispatch<React.SetStateAction<string | null>>;
+};
+
+export const ArticleIdContext = React.createContext<ArticleIdContextType | null>(null);
+export const FacetIdContext = React.createContext<FacetIdContextType | null>(null);
+// #endregion
+

@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { Article, Facet, ArticleContentRecord, ArticleRecord } from './types';
-import { List } from 'immutable';
+import { Article, ArticleIdContext } from './types';
 import { fetchAllArticles, getCurrentDate } from './utilities';
-
+import { v4 as uuidv4 } from 'uuid';
+/*
 function ArticleList() {
     const [articles, setArticles] = useState<Article[]>([]);
+    const articleIdContext = useContext(ArticleIdContext)
+    if (!articleIdContext) {
+        throw new Error("ArticleIdContext is null");
+    }
+    const { setArticleId } = articleIdContext;
     const navigate = useNavigate();
 
     const createNewArticle = () => {
-        const id = new Date().getTime().toString();
+        const id = uuidv4();
+        setArticleId(id);
         navigate(`/article/${id}`);// Transaction to save will be handled in Article.tsx to avoid empty articles creation
     };
 
@@ -58,3 +64,4 @@ function ArticleList() {
 }
 
 export default ArticleList;
+*/
