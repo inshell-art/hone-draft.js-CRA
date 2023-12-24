@@ -23,5 +23,10 @@
   },
   "include": [
     "src"
+  ], 
+  "exclude": [
+    "src/components/FACETs.tsx",
+    "src/hooks/useHoneState.ts",
+    "src/utils/db.ts"   
   ]
 }

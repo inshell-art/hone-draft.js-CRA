@@ -1,7 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600&display=swap");
+
 :root {
-  --almost-transparent-black: #0F0F0F;
-  --almost-transparent-white: #F0F0F0;
-  --ash: #5B5B5B;
+  --almost-transparent-black: #0f0f0f;
+  --almost-transparent-white: #f0f0f0;
+  --ash: #5b5b5b;
   --Scheele-green: #006100;
 
   --small: 16px;
@@ -19,12 +21,12 @@ body {
   color: var(--almost-transparent-black);
   width: 780px;
   margin: var(--large) auto;
-  font-family: 'Source Code Pro', monospace;
+  font-family: "Source Code Pro", monospace;
   font-size: var(--small);
   font-weight: var(--light-light);
   line-height: 1.4;
 }
-
+/* The following styles are for HoneEditor component */
 .article-title {
   font-weight: var(--light-heavy);
   font-size: var(--medium);
@@ -34,7 +36,30 @@ body {
 .facet-title {
   font-weight: var(--light-heavy);
   padding-top: var(--large);
+  padding-bottom: var(--medium);
+}
+
+.default-block {
   padding-bottom: var(--small);
+}
+
+/* The following styles are for MyHone component */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-title {
+  font-size: var(--large);
+  font-weight: var(--light-light);
+}
+
+.create-article-btn {
+  padding: 5px 10px;
+  font-size: var(--small);
+  font-weight: var(--light-light);
+  cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,4 +77,11 @@ body {
     font-weight: var(--dark-heavy);
   }
 
+  .header-title {
+    font-weight: var(--dark-light);
+  }
+
+  .create-article-btn {
+    font-weight: var(--dark-light);
+  }
 }

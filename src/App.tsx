@@ -1,33 +1,25 @@
-import './App.css';
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ArticleEditor from './ArticleEditor';
-// import ArticleList from './ArticleList';
+import "./App.css";
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import HoneEditor from "./components/HoneEditor";
+import MyHone from "./components/MyHone";
 // import FACETs from './FACETs';
-import { ArticleIdContext, FacetIdContext } from './types';
-import { ErrorBoundary } from 'react-error-boundary';// the lib has useErrorBoundary hook and HOC too, check them out when testing environment is ready
+import { ErrorBoundary } from "react-error-boundary"; // the lib has useErrorBoundary hook and HOC too, check them out when testing environment is ready
 
-function App() {
-  const [articleId, setArticleId] = React.useState<string | null>(null);
-  const [facetId, setFacetId] = React.useState<string | null>(null);
-
+const App = () => {
   return (
-    <ErrorBoundary fallback={<div>Something went wrong</div>}>
-      <ArticleIdContext.Provider value={{ articleId, setArticleId }}>
-        <FacetIdContext.Provider value={{ facetId, setFacetId }}>
-          <Router>
-            <div>
-              <Routes>
-                {/* <Route path="/" element={<ArticleList />} />*/}
-                <Route path="/article/:id" element={<ArticleEditor />} />
-                {/*<Route path="/FACETs" element={<FACETs />} />*/}
-              </Routes>
-            </div>
-          </Router>
-        </FacetIdContext.Provider>
-      </ArticleIdContext.Provider>
+    <ErrorBoundary fallback={<div>Something went wrong, please refresh or come back later.</div>}>
+      <Router>
+        <div>
+          <Routes>
+            <Route path="/" element={<MyHone />} />
+            <Route path="/article/:id" element={<HoneEditor />} />
+            {/*<Route path="/FACETs" element={<FACETs />} />*/}
+          </Routes>
+        </div>
+      </Router>
     </ErrorBoundary>
   );
-}
+};
 
 export default App;
