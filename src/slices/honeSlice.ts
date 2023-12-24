@@ -13,13 +13,13 @@ const honeSlice = createSlice({
   name: "hone",
   initialState,
   reducers: {
-    updateHoneState: (state, action: PayloadAction<UpdateHoneStatePayload>) => {
+    updateHoneEditor: (state, action: PayloadAction<UpdateHoneStatePayload>) => {
       const { articleId, articleDate, editorState } = action.payload;
       const transformedState = transformEditorStateToHoneState(articleId, articleDate, editorState);
       // Update state with transformed state
-      state.articles = transformedState.articles;
-      state.facets = transformedState.facets;
-      state.articleFacetLinks = transformedState.articleFacetLinks;
+      state.articles = { ...state.articles, ...transformedState.articles };
+      state.facets = { ...state.facets, ...transformedState.facets };
+      state.articleFacetLinks = { ...state.articleFacetLinks, ...transformedState.articleFacetLinks };
     },
 
     saveToDb: (state) => {
@@ -29,5 +29,5 @@ const honeSlice = createSlice({
   },
 });
 
-export const { updateHoneState, saveToDb } = honeSlice.actions;
+export const { updateHoneEditor, saveToDb } = honeSlice.actions;
 export default honeSlice.reducer;

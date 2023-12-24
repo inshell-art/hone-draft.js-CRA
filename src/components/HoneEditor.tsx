@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ContentBlock, Editor, EditorState } from "draft-js";
 import { useDispatch, useSelector } from "react-redux";
-import { updateHoneState } from "../slices/honeSlice";
+import { updateHoneEditor } from "../slices/honeSlice";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
@@ -12,7 +12,6 @@ const HoneEditor = () => {
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
   const dispatch = useDispatch();
-  const honeState = useSelector((state: any) => state.honeState);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
@@ -21,7 +20,7 @@ const HoneEditor = () => {
     if (currentPlainText !== prevPlainText) {
       const articleDate = getCurrentDate();
       if (articleId) {
-        dispatch(updateHoneState({ articleId, articleDate, editorState: newEditorState }));
+        dispatch(updateHoneEditor({ articleId, articleDate, editorState: newEditorState }));
       }
       setPrevPlainText(currentPlainText);
     }

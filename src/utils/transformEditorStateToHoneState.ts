@@ -1,7 +1,7 @@
 import { convertToRaw, EditorState } from "draft-js";
 import { Article, Facet, Block, ArticleFacetLink, HoneState } from "../types/types";
 import { v4 as uuidv4 } from "uuid";
-import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "./constants";
+import { FACET_TITLE_SYMBOL } from "./constants";
 
 // Assemble article, facet, and articleFacetLink to be the honeState
 export const transformEditorStateToHoneState = (articleId: string, articleDate: string, editorState: EditorState): HoneState => {
