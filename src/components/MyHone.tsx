@@ -1,5 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import { useSelector } from "react-redux";
+import React from "react";
+import { RootState } from "../store/store";
 
 const MyHone = () => {
   const navigate = useNavigate();
@@ -8,6 +11,10 @@ const MyHone = () => {
     const newArticleId = uuidv4();
     navigate(`/article/${newArticleId}`); // Transaction to save will be handled in Article.tsx to avoid empty articles creation
   };
+
+  const articles = useSelector((state: RootState) => state.hone.articles);
+  console.log("articles", articles);
+
   return (
     <div>
       <div className="header">
@@ -16,7 +23,12 @@ const MyHone = () => {
           New Article
         </button>
       </div>
-      {/* Rest of your component */}
+      <div className="articles-list">
+        {Object.values(articles).map((article) => (
+          <div key={article.articleId}>{article.title || "Untitled Article"}</div>
+        ))}
+        11
+      </div>{" "}
     </div>
   );
 };

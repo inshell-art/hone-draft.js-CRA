@@ -1,22 +1,16 @@
-import { ARTICLE_TITLE, FACET_TITLE } from "../utils/constants";
-import { EditorState } from "draft-js";
-
-export type Block = {
-  type?: typeof ARTICLE_TITLE | typeof FACET_TITLE | null;
-  text?: string;
-};
+import { RawDraftContentState } from "draft-js";
 
 export type Facet = {
-  facetId: string;
+  facetId?: string;
   title?: string;
-  blocks?: Block[];
+  content?: string;
 };
 
 export type Article = {
   articleId: string;
   date?: string;
   title?: string;
-  nonFacet?: Block[];
+  nonFacet?: string;
 };
 
 export type ArticleFacetLink = {
@@ -34,7 +28,7 @@ export type HoneState = {
 export type UpdateHoneStatePayload = {
   articleId: string;
   articleDate: string;
-  editorState: EditorState;
+  rawContentState: RawDraftContentState;
 };
 // The payload for update hone state is mixed with the articleId and the editorState
 // It might be the concisest place to handle the mixing

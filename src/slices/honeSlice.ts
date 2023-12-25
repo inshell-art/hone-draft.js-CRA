@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { EditorState } from "draft-js";
-import { Article, Facet, ArticleFacetLink, HoneState, UpdateHoneStatePayload } from "../types/types";
+import { HoneState, UpdateHoneStatePayload } from "../types/types";
 import { transformEditorStateToHoneState } from "../utils/transformEditorStateToHoneState";
 
 const initialState: HoneState = {
@@ -14,12 +13,15 @@ const honeSlice = createSlice({
   initialState,
   reducers: {
     updateHoneEditor: (state, action: PayloadAction<UpdateHoneStatePayload>) => {
-      const { articleId, articleDate, editorState } = action.payload;
-      const transformedState = transformEditorStateToHoneState(articleId, articleDate, editorState);
+      const { articleId, articleDate, rawContentState } = action.payload;
+      const transformedState = transformEditorStateToHoneState(articleId, articleDate, rawContentState);
       // Update state with transformed state
       state.articles = { ...state.articles, ...transformedState.articles };
       state.facets = { ...state.facets, ...transformedState.facets };
       state.articleFacetLinks = { ...state.articleFacetLinks, ...transformedState.articleFacetLinks };
+      console.log("state.articles", state.articles);
+      console.log("state.facets", state.facets);
+      console.log("state.articleFacetLinks", state.articleFacetLinks);
     },
 
     saveToDb: (state) => {

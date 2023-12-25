@@ -1,24 +1,28 @@
-import { convertToRaw, EditorState } from "draft-js";
-import { Article, Facet, Block, ArticleFacetLink, HoneState } from "../types/types";
+import { RawDraftContentState } from "draft-js";
+import { Article, Facet, ArticleFacetLink, HoneState } from "../types/types";
 import { v4 as uuidv4 } from "uuid";
 import { FACET_TITLE_SYMBOL } from "./constants";
+import { is } from "immutable";
 
 // Assemble article, facet, and articleFacetLink to be the honeState
-export const transformEditorStateToHoneState = (articleId: string, articleDate: string, editorState: EditorState): HoneState => {
-  const contentState = editorState.getCurrentContent();
-  const rawContent = convertToRaw(contentState);
-
-  const article: Article = { articleId, date: articleDate, title: "", nonFacet: [] };
+export const transformEditorStateToHoneState = (
+  articleId: string,
+  articleDate: string,
+  rawContentState: RawDraftContentState
+): HoneState => {
+  let article: Article = { articleId, date: articleDate };
   const articles: Record<string, Article> = { articleId: article };
   let currentFacet: Facet | null = null;
   const facets: Record<string, Facet> = {};
   const articleFacetLinks: ArticleFacetLink[] = [];
+  let closeLastBlock = false;
+  let isFacetHasId = false;
 
-  rawContent.blocks.forEach((block, index) => {
-    const honeBlock: Block = { type: null, text: block.text };
-
+  rawContentState.blocks.forEach((block, index) => {
+    // get the block id
+    const blockId = block.key;
     if (index === 0) {
-      article.title = block.text;
+      article = { ...article, title: block.text };
     } else if (block.text.startsWith(FACET_TITLE_SYMBOL)) {
       if (currentFacet) {
         // Close the previous facet and reset currentFacet
@@ -29,22 +33,13 @@ export const transformEditorStateToHoneState = (articleId: string, articleDate: 
           orderIndex: index,
         });
         currentFacet = null; // Reset currentFacet
-      }
-      currentFacet = { facetId: uuidv4(), title: block.text, blocks: [] };
-    } else {
-      if (currentFacet) {
-        currentFacet.blocks?.push(honeBlock);
-        // Close the last facet while encountering the last block
-        if (index === rawContent.blocks.length - 1) {
-          facets[currentFacet.facetId] = currentFacet;
-          articleFacetLinks.push({
-            articleId,
-            facetId: currentFacet.facetId,
-            orderIndex: index,
-          });
-        }
       } else {
-        article.nonFacet?.push(honeBlock);
+        if (currentFacet.facetId) {
+          currentFacet.title = block.text;
+        } else {
+          currentFacet = { title: block.text };
+          currentFacet.facetId = uuidv4();
+        }
       }
     }
   });

@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HoneEditor from "./components/HoneEditor";
 import MyHone from "./components/MyHone";
@@ -13,7 +13,7 @@ const App = () => {
         <div>
           <Routes>
             <Route path="/" element={<MyHone />} />
-            <Route path="/article/:id" element={<HoneEditor />} />
+            <Route path="/article/:articleId" element={<HoneEditor />} />
             {/*<Route path="/FACETs" element={<FACETs />} />*/}
           </Routes>
         </div>
