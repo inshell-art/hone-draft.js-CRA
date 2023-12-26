@@ -1,7 +1,5 @@
 import { ARTICLE_TITLE, FACET_TITLE_SYMBOL, FACET_TITLE } from "./constants";
-import { EditorState, Modifier, ContentState, convertToRaw } from "draft-js";
-import { Article, Facet, Block, ArticleFacetLink } from "../types/types";
-import { HoneState } from "../types/types";
+import { EditorState, Modifier } from "draft-js";
 
 export const updateCustomBlockTypes = (editorState: EditorState) => {
   const selectionState = editorState.getSelection();
