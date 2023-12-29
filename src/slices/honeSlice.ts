@@ -19,9 +19,6 @@ const honeSlice = createSlice({
       state.articles = { ...state.articles, ...transformedState.articles };
       state.facets = { ...state.facets, ...transformedState.facets };
       state.articleFacetLinks = { ...state.articleFacetLinks, ...transformedState.articleFacetLinks };
-      console.log("state.articles", state.articles);
-      console.log("state.facets", state.facets);
-      console.log("state.articleFacetLinks", state.articleFacetLinks);
     },
 
     saveToDb: (state) => {

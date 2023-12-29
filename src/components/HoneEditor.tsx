@@ -5,24 +5,26 @@ import { ContentBlock, Editor, EditorState, convertToRaw } from "draft-js";
 import { updateHoneEditor } from "../slices/honeSlice";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
+import { RootState } from "../store/store";
+import { useSelector } from "react-redux";
 
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
   const dispatch = useDispatch();
+  const articles = useSelector((state: RootState) => state.hone.articles);
+  console.log("All articles:", articles);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
     const rawContentState = convertToRaw(newEditorState.getCurrentContent());
-    console.log("rawContentState", rawContentState);
 
     if (currentPlainText !== prevPlainText) {
       const articleDate = getCurrentDate();
       if (articleId) {
         dispatch(updateHoneEditor({ articleId, articleDate, rawContentState }));
-        console.log("updateHoneEditor");
       }
       setPrevPlainText(currentPlainText);
     }

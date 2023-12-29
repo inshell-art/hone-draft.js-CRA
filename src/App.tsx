@@ -3,7 +3,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HoneEditor from "./components/HoneEditor";
 import MyHone from "./components/MyHone";
-// import FACETs from './FACETs';
+import FACETs from "./components/FACETs";
 import { ErrorBoundary } from "react-error-boundary"; // the lib has useErrorBoundary hook and HOC too, check them out when testing environment is ready
 
 const App = () => {
@@ -14,7 +14,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<MyHone />} />
             <Route path="/article/:articleId" element={<HoneEditor />} />
-            {/*<Route path="/FACETs" element={<FACETs />} />*/}
+            <Route path="/FACETs" element={<FACETs />} />
           </Routes>
         </div>
       </Router>

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useSelector } from "react-redux";
 import React from "react";
 import { RootState } from "../store/store";
+import { Link } from "react-router-dom";
 
 const MyHone = () => {
   const navigate = useNavigate();
@@ -23,12 +24,14 @@ const MyHone = () => {
           New Article
         </button>
       </div>
+      <Link to="/FACETs">FACETs</Link>
       <div className="articles-list">
         {Object.values(articles).map((article) => (
-          <div key={article.articleId}>{article.title || "Untitled Article"}</div>
+          <div key={article.articleId}>
+            <Link to={`/article/${article.articleId}`}>{article.title || "Untitled Article"}</Link>
+          </div>
         ))}
-        11
-      </div>{" "}
+      </div>
     </div>
   );
 };
