@@ -71,12 +71,17 @@ export const transformEditorStateToHoneState = (
       articles[article.articleId] = article;
       console.log("article title:", article.title);
     } else if (isLastBlock) {
-      console.log("last block");
+      console.log("last block's isFacetInitialized:", isFacetInitialized);
       if (isFacetInitialized) {
-        appendFacetAndLink(currentFacet, articleId, index, facets, articleFacetLinks);
-        isFacetInitialized = false;
-        console.log("last block as facet:", block.text);
-        console.log("facets2:", facets);
+        if (isFacetTitle) {
+          appendFacetAndLink(currentFacet, articleId, index, facets, articleFacetLinks);
+          isFacetInitialized = false;
+          console.log("last block as facet:", block.text);
+          console.log("facets2:", facets);
+        } else {
+          currentFacet && (currentFacet.content = appendText(currentFacet?.content, block.text));
+          appendFacetAndLink(currentFacet, articleId, index, facets, articleFacetLinks);
+        }
       } else {
         article.nonFacet = appendText(article.nonFacet, block.text);
         console.log("last block as non-facet:", block.text);
