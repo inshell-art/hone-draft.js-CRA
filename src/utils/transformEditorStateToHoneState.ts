@@ -1,7 +1,6 @@
 import { RawDraftContentState } from "draft-js";
 import { Article, Facet, ArticleFacetLink, HoneState } from "../types/types";
 import { FACET_TITLE_SYMBOL } from "./constants";
-import { is } from "immutable";
 
 /* facet id is consisted of article id and block id
 so, preserve block id in db and convert it back to editorState when loading
@@ -16,36 +15,39 @@ let currentFacet: Facet | null = null;
 const facets: Record<string, Facet> = {};
 const articleFacetLinks: ArticleFacetLink[] = [];
 
+// Helper function to initialize facet
+function initializeFacet(articleId: string, blockId: string, title: string): Facet {
+  return {
+    facetId: `${articleId}-${blockId}`,
+    title: title,
+  };
+}
+
 // Helper functions to append facet and link
-function appendFacetAndLink(
-  currentFacet: Facet | null,
-  articleId: string,
-  index: number,
-  facets: Record<string, Facet>,
-  articleFacetLinks: ArticleFacetLink[]
-) {
-  if (currentFacet) {
-    if (currentFacet && currentFacet.facetId) {
-      facets[currentFacet.facetId] = currentFacet;
+function appendLink(articleId: string, facetId: string, orderIndex: number, articleFacetLinks: ArticleFacetLink[]) {
+  // push only if the link does not exist
+  const existingLinkIndex = articleFacetLinks.findIndex((link) => link.articleId === articleId && link.facetId === facetId);
 
-      // push only if the link does not exist
-      const existingLinkIndex = articleFacetLinks.findIndex(
-        (link) => link.articleId === articleId && link.facetId === currentFacet.facetId
-      );
+  if (existingLinkIndex === -1) {
+    articleFacetLinks.push({
+      articleId,
+      facetId,
+      orderIndex,
+    });
 
-      if (existingLinkIndex === -1) {
-        articleFacetLinks.push({
-          articleId,
-          facetId: currentFacet.facetId,
-          orderIndex: index,
-        });
-      }
-    }
-    console.log("facets1:", facets);
-    // Return updated state and reset current facet
-    return { facets, articleFacetLinks, currentFacet: null };
+    return { articleFacetLinks };
   }
 }
+
+// Helper functions to append facet
+function appendFacet(currentFacet: Facet | null, facets: Record<string, Facet>) {
+  if (currentFacet && currentFacet.facetId) {
+    facets[currentFacet.facetId] = currentFacet;
+    // return facets and reset currentFacet
+    return { facets, currentFacet: null };
+  }
+}
+
 // Helper function to append text
 function appendText(currentText: string | undefined, newText: string) {
   return currentText ? currentText + "\n" + newText : newText;
@@ -65,46 +67,45 @@ export const transformEditorStateToHoneState = (
     const isLastBlock = index === array.length - 1;
     const blockId = block.key;
 
-    console.log("index:", index);
     if (isFirstBlock) {
       article.title = block.text;
       articles[article.articleId] = article;
-      console.log("article title:", article.title);
     } else if (isLastBlock) {
-      console.log("last block's isFacetInitialized:", isFacetInitialized);
       if (isFacetInitialized) {
         if (isFacetTitle) {
-          appendFacetAndLink(currentFacet, articleId, index, facets, articleFacetLinks);
+          const facetTitle = block.text;
+          currentFacet = initializeFacet(articleId, blockId, facetTitle);
+          appendFacet(currentFacet, facets);
+
+          const facetId = currentFacet.facetId;
+          facetId && appendLink(articleId, facetId, index, articleFacetLinks);
           isFacetInitialized = false;
-          console.log("last block as facet:", block.text);
-          console.log("facets2:", facets);
         } else {
-          currentFacet && (currentFacet.content = appendText(currentFacet?.content, block.text));
-          appendFacetAndLink(currentFacet, articleId, index, facets, articleFacetLinks);
+          currentFacet && (currentFacet.content = appendText(currentFacet.content, block.text));
+          appendFacet(currentFacet, facets);
+          isFacetInitialized = false;
         }
       } else {
         article.nonFacet = appendText(article.nonFacet, block.text);
-        console.log("last block as non-facet:", block.text);
       }
     } else if (isFacetTitle) {
+      // append the last facet
       if (isFacetInitialized) {
-        appendFacetAndLink(currentFacet, articleId, index, facets, articleFacetLinks);
+        appendFacet(currentFacet, facets);
         isFacetInitialized = false;
-        console.log("append facet and link:", currentFacet);
       }
-      // initialize a new facet
-      currentFacet = {} as Facet;
+      // initialize a new facet and append the link
+      const facetTitle = block.text;
+      currentFacet = initializeFacet(articleId, blockId, facetTitle);
       isFacetInitialized = true;
-      currentFacet.facetId = `${articleId}-${blockId}`;
-      currentFacet.title = block.text;
-      console.log("initialize a new facet:", block.text);
+
+      const facetId = currentFacet.facetId;
+      facetId && appendLink(articleId, facetId, index, articleFacetLinks);
     } else {
       if (isFacetInitialized) {
-        currentFacet && (currentFacet.content = appendText(currentFacet?.content, block.text));
-        console.log("append facet content:", block.text);
+        currentFacet && (currentFacet.content = appendText(currentFacet.content, block.text));
       } else {
         article.nonFacet = appendText(article.nonFacet, block.text);
-        console.log("append non-facet content:", block.text);
       }
     }
   });
