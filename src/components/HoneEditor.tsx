@@ -1,3 +1,33 @@
+/**
+ * HoneEditor Component
+ *
+ * This component is the editor of Hone. It is a rich text editor based on draft.js.
+ * Users can create and edit articles in this editor.
+ *
+ * Articles consist of article title, non-facet, and facets;
+ * a facet consist of facet title and facet content;
+ * facet title is the first block (defined by draft.js) of a facet, which starts with a symbol "$",
+ * and facet content is the blocks after facet title.
+ * blocks not in facets are non-facets.
+ *
+ * Users can compare and merge facets in the editor, which is the core feature of Hone:
+ * it could polish (hone) the facets in multiple articles to propose the users' thoughts, that is,
+ * articles are not the place to present thoughts, rather, the scenarios and context to polish thoughts as facets:
+ * and facets are the essence of cognition of users.
+ *
+ * All operations of Hone are based on this component,
+ * except for the operations of the articles list in MyHone.tsx.
+ *
+ * Features:
+ * 1. Create and edit articles
+ * 2. Create and edit facets
+ * 3. Compare and merge facets
+ * 4. Save/load articles
+ * 5. style articles and facets
+ *
+ *
+ */
+
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
