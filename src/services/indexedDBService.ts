@@ -25,14 +25,12 @@ class HoneDatabase extends Dexie {
 
 const db = new HoneDatabase();
 
-export const saveArticle = async (articleId: string, articleDate: string, articleTitle: string) => {
-  try {
-    await db.articles.put({
-      articleId,
-      date: articleDate,
-      title: articleTitle,
-    });
-  } catch (error) {
-    console.error(error);
-  }
+// upsert article with put
+export const upsertArticle = async (article: Article) => {
+  await db.articles.put(article);
+};
+
+// upsert facet with put
+export const upsertFacet = async (facet: Facet) => {
+  await db.facets.put(facet);
 };
