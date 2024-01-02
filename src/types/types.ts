@@ -16,3 +16,9 @@ export type ArticleFacetLink = {
   facetId: string;
   orderIndex: number;
 };
+
+export type HoneState = {
+  articles: Record<string, Article>;
+  facets: Record<string, Facet>;
+  articleFacetLinks: ArticleFacetLink[];
+};

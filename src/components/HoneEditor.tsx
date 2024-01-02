@@ -1,3 +1,4 @@
+// #region description
 /**
  * HoneEditor Component
  *
@@ -24,35 +25,31 @@
  * 3. Compare and merge facets
  * 4. Save/load articles
  * 5. style articles and facets
- *
- *
  */
+// #endregion description
 
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { ContentBlock, Editor, EditorState, convertToRaw } from "draft-js";
 import { updateHoneEditor } from "../slices/honeSlice";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
-import { RootState } from "../store/store";
-import { useSelector } from "react-redux";
+import { transformEditorStateToHoneState } from "../utils/transformEditorStateToHoneState";
 
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
-  const dispatch = useDispatch();
-  const articles = useSelector((state: RootState) => state.hone.articles);
-  console.log("All articles:", articles);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
     const rawContentState = convertToRaw(newEditorState.getCurrentContent());
 
-    if (currentPlainText !== prevPlainText) {
+    if (currentPlainText !== prevPlainText && articleId) {
       const articleDate = getCurrentDate();
+
+      const transformedData = transformEditorStateToHoneState(articleId, articleDate, rawContentState);
       if (articleId) {
         dispatch(updateHoneEditor({ articleId, articleDate, rawContentState }));
       }
