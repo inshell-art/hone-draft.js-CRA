@@ -31,11 +31,10 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { ContentBlock, Editor, EditorState, convertToRaw } from "draft-js";
-import { updateHoneEditor } from "../slices/honeSlice";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
-import { transformEditorStateToHoneState } from "../utils/transformEditorStateToHoneState";
-
+import { transformToHoneState } from "../utils/transformToHoneState";
+import { saveHoneState } from "../services/indexedDBService";
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
@@ -49,10 +48,9 @@ const HoneEditor = () => {
     if (currentPlainText !== prevPlainText && articleId) {
       const articleDate = getCurrentDate();
 
-      const transformedData = transformEditorStateToHoneState(articleId, articleDate, rawContentState);
-      if (articleId) {
-        dispatch(updateHoneEditor({ articleId, articleDate, rawContentState }));
-      }
+      const transformedHoneState = transformToHoneState(articleId, articleDate, rawContentState);
+      saveHoneState(transformedHoneState, articleId); // articleId to specify the article to save
+
       setPrevPlainText(currentPlainText);
     }
   };

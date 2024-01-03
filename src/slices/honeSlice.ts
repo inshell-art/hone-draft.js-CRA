@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { HoneState, UpdateHoneStatePayload } from "../types/types";
-import { transformEditorStateToHoneState } from "../utils/transformEditorStateToHoneState";
+import { transformEditorStateToHoneState } from "../utils/transformToHoneState";
 
 const initialState: HoneState = {
   articles: {},

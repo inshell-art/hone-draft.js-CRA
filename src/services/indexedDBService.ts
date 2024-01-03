@@ -1,7 +1,6 @@
 import Dexie from "dexie";
-import { EditorState } from "draft-js";
-import { ARTICLE_TITLE, FACET_TITLE } from "../utils/constants";
-import { Article, Facet, ArticleFacetLink } from "../types/types";
+import { Article, Facet, ArticleFacetLink, HoneState } from "../types/types";
+import isEqual from "lodash/isEqual";
 import { PAGE_SIZE } from "../utils/constants";
 
 // Initialize database
@@ -26,22 +25,28 @@ class HoneDatabase extends Dexie {
 
 const db = new HoneDatabase();
 
-// upsert article with put
-export const upsertArticle = async (article: Article) => {
-  await db.articles.put(article);
+// save honeState to db
+export const saveHoneState = async (honeState: HoneState, articleId: string) => {
+  const { articles, facets, articleFacetLinks } = honeState;
+
+  // save the article with articleId if changed
+  const article = articles[articleId];
+  const dbArticle = await db.articles.get(articleId);
+  if (!isEqual(article, dbArticle)) {
+    await db.articles.put(article);
+  }
+
+  // get facets in the article with articleId
+  const dbArticleFacetLinks = await db.articleFacetLinks.where({ articleId }).toArray();
+  const dbFacets = await db.facets.bulkGet(dbArticleFacetLinks.map((link) => link.facetId));
+
+  // get facetId of facets in the article with articleId, if any changed by isEqual, update it
+
+  // save articleFacetLinks
+  await db.articleFacetLinks.bulkPut(articleFacetLinks);
 };
 
-// upsert facet with put
-export const upsertFacet = async (facet: Facet) => {
-  await db.facets.put(facet);
-};
-
-// upsert articleFacetLink with put
-export const upsertArticleFacetLink = async (articleFacetLink: ArticleFacetLink) => {
-  await db.articleFacetLinks.put(articleFacetLink);
-};
-
-// get more article with offset
+// get more article with offset for MyHone
 export const getMoreArticles = async (offset: number) => {
   const articles = await db.articles.offset(offset).limit(PAGE_SIZE).reverse().sortBy("date");
 

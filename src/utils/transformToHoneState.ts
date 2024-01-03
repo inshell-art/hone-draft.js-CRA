@@ -9,12 +9,6 @@ and the article as the editor merge other facet in is the article id to consist 
 that is, editor is the source of truth of the facet id
 and destruct the facet id to article id and block id when loading to use block id back in editor */
 
-let article: Article = {} as Article;
-const articles: Record<string, Article> = {};
-let currentFacet: Facet | null = null;
-const facets: Record<string, Facet> = {};
-const articleFacetLinks: ArticleFacetLink[] = [];
-
 // Helper function to initialize facet
 function initializeFacet(articleId: string, blockId: string, title: string): Facet {
   return {
@@ -27,13 +21,8 @@ function initializeFacet(articleId: string, blockId: string, title: string): Fac
 function appendLink(articleId: string, facetId: string, orderIndex: number, articleFacetLinks: ArticleFacetLink[]) {
   // push only if the link does not exist
   const existingLinkIndex = articleFacetLinks.findIndex((link) => link.articleId === articleId && link.facetId === facetId);
-
   if (existingLinkIndex === -1) {
-    articleFacetLinks.push({
-      articleId,
-      facetId,
-      orderIndex,
-    });
+    articleFacetLinks = [...articleFacetLinks, { articleId, facetId, orderIndex }];
 
     return { articleFacetLinks };
   }
@@ -42,7 +31,8 @@ function appendLink(articleId: string, facetId: string, orderIndex: number, arti
 // Helper functions to append facet
 function appendFacet(currentFacet: Facet | null, facets: Record<string, Facet>) {
   if (currentFacet && currentFacet.facetId) {
-    facets[currentFacet.facetId] = currentFacet;
+    facets = { ...facets, [currentFacet.facetId]: currentFacet };
+
     // return facets and reset currentFacet
     return { facets, currentFacet: null };
   }
@@ -54,11 +44,17 @@ function appendText(currentText: string | undefined, newText: string) {
 }
 
 // Assemble article, facet, and articleFacetLink to be the honeState
-export const transformEditorStateToHoneState = (
+export const transformToHoneState = (
   articleId: string,
   articleDate: string,
   rawContentState: RawDraftContentState
 ): HoneState => {
+  let article: Article = {} as Article;
+  let articles: Record<string, Article> = {};
+  let currentFacet: Facet | null = null;
+  const facets: Record<string, Facet> = {};
+  const articleFacetLinks: ArticleFacetLink[] = [];
+
   article = { articleId, date: articleDate };
   let isFacetInitialized = false;
   rawContentState.blocks.forEach((block, index, array) => {
@@ -68,8 +64,8 @@ export const transformEditorStateToHoneState = (
     const blockId = block.key;
 
     if (isFirstBlock) {
-      article.title = block.text;
-      articles[article.articleId] = article;
+      article = { ...article, title: block.text };
+      articles = { ...articles, [article.articleId]: article };
     } else if (isLastBlock) {
       if (isFacetInitialized) {
         if (isFacetTitle) {

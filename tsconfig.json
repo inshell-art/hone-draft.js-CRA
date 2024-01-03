@@ -27,6 +27,6 @@
   "exclude": [
     "src/components/FACETs.tsx",
     "src/hooks/useHoneState.ts",
-    "src/utils/db.ts"   
+    "src/services/db.ts"   
   ]
 }
