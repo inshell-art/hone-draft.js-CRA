@@ -56,6 +56,7 @@ export const transformToHoneState = (
   const articleFacetLinks: ArticleFacetLink[] = [];
 
   article = { articleId, date: articleDate };
+  articles = { ...articles, [article.articleId]: article };
   let isFacetInitialized = false;
   rawContentState.blocks.forEach((block, index, array) => {
     const isFirstBlock = index === 0;
@@ -65,7 +66,6 @@ export const transformToHoneState = (
 
     if (isFirstBlock) {
       article = { ...article, title: block.text };
-      articles = { ...articles, [article.articleId]: article };
     } else if (isLastBlock) {
       if (isFacetInitialized) {
         if (isFacetTitle) {

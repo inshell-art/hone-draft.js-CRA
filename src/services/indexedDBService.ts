@@ -36,14 +36,23 @@ export const saveHoneState = async (honeState: HoneState, articleId: string) => 
     await db.articles.put(article);
   }
 
-  // get facets in the article with articleId
-  const dbArticleFacetLinks = await db.articleFacetLinks.where({ articleId }).toArray();
-  const dbFacets = await db.facets.bulkGet(dbArticleFacetLinks.map((link) => link.facetId));
+  // save facets if changed
+  const dbFacets = await db.facets.where("facetId").startsWith(articleId).toArray();
+  const facetsToSave = Object.values(facets).filter((facet) => {
+    const correspondingDbFacet = dbFacets.find((dbFacet) => dbFacet.facetId === facet.facetId);
 
-  // get facetId of facets in the article with articleId, if any changed by isEqual, update it
+    return !correspondingDbFacet || !isEqual(facet, correspondingDbFacet);
+  });
+  await db.facets.bulkPut(facetsToSave);
 
-  // save articleFacetLinks
-  await db.articleFacetLinks.bulkPut(articleFacetLinks);
+  // save articleFacetLinks if changed
+  const dbLinks = await db.articleFacetLinks.where("articleId").equals(articleId).toArray();
+  const linksToSave = articleFacetLinks.filter((link) => {
+    const correspondingDbLink = dbLinks.find((dbLink) => dbLink.facetId === link.facetId);
+
+    return !correspondingDbLink || !isEqual(link, correspondingDbLink);
+  });
+  await db.articleFacetLinks.bulkPut(linksToSave);
 };
 
 // get more article with offset for MyHone

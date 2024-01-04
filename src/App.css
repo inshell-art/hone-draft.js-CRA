@@ -1,46 +1,49 @@
-@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap");
 
 :root {
-  --almost-transparent-black: #0f0f0f;
-  --almost-transparent-white: #f0f0f0;
   --ash: #5b5b5b;
   --Scheele-green: #006100;
 
   --small: 16px;
   --medium: 24px;
   --large: 40px;
+  --super-large: 60px;
 
-  --dark-light: 300;
-  --dark-heavy: 500;
-  --light-light: calc(var(--dark-light) + 100);
-  --light-heavy: calc(var(--dark-heavy) + 100);
+  --light: 300;
+  --middle: 400;
+  --heavy: 600;
 }
 
 body {
-  background-color: var(--almost-transparent-white);
-  color: var(--almost-transparent-black);
+  background-color: #f0f0f0;
+  color: #0f0f0f;
   width: 780px;
-  margin: var(--large) auto;
+  margin: var(--medium) auto;
   font-family: "Source Code Pro", monospace;
   font-size: var(--small);
-  font-weight: var(--light-light);
+  font-weight: var(--middle);
   line-height: 1.4;
 }
 /* The following styles are for HoneEditor component */
 .article-title {
-  font-weight: var(--light-heavy);
-  font-size: var(--medium);
-  padding-bottom: var(--large);
+  font-weight: var(--heavy);
+  font-size: var(--large);
+  padding-bottom: var(--small);
+  padding-top: var(--large);
+}
+
+.block-padding {
+  padding-top: var(--small);
 }
 
 .facet-title {
-  font-weight: var(--light-heavy);
+  font-weight: var(--heavy);
   padding-top: var(--large);
-  padding-bottom: var(--medium);
 }
 
-.default-block {
-  padding-bottom: var(--small);
+.not-facet {
+  padding-top: var(--small);
+  font-weight: var(--light);
 }
 
 /* The following styles are for MyHone component */
@@ -52,36 +55,23 @@ body {
 
 .header-title {
   font-size: var(--large);
-  font-weight: var(--light-light);
+  font-weight: var(--light);
 }
 
 .create-article-btn {
   padding: 5px 10px;
   font-size: var(--small);
-  font-weight: var(--light-light);
+  font-weight: var(--light);
   cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: var(--almost-transparent-black);
-    color: var(--almost-transparent-white);
-    font-weight: var(--dark-light);
+    background-color: #191919;
+    color: #c1c1c1;
   }
 
-  .article-title {
-    font-weight: var(--dark-heavy);
-  }
-
-  .facet-title {
-    font-weight: var(--dark-heavy);
-  }
-
-  .header-title {
-    font-weight: var(--dark-light);
-  }
-
-  .create-article-btn {
-    font-weight: var(--dark-light);
+  .not-facet {
+    font-weight: calc(var(--light) - 100);
   }
 }

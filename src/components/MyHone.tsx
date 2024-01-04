@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { useSelector } from "react-redux";
 import React from "react";
-import { RootState } from "../store/store";
 import { Link } from "react-router-dom";
 
 const MyHone = () => {
@@ -13,9 +11,6 @@ const MyHone = () => {
     navigate(`/article/${newArticleId}`); // Transaction to save will be handled in Article.tsx to avoid empty articles creation
   };
 
-  const articles = useSelector((state: RootState) => state.hone.articles);
-  console.log("articles", articles);
-
   return (
     <div>
       <div className="header">
@@ -25,13 +20,6 @@ const MyHone = () => {
         </button>
       </div>
       <Link to="/FACETs">FACETs</Link>
-      <div className="articles-list">
-        {Object.values(articles).map((article) => (
-          <div key={article.articleId}>
-            <Link to={`/article/${article.articleId}`}>{article.title || "Untitled Article"}</Link>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };

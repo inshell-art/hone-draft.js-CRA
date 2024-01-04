@@ -1,16 +1,7 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/store";
+/**
+ * the component for the FACETs page
+ */
 
-const FACETs = () => {
-  const facets = useSelector((state: RootState) => state.hone.articles);
-
-  return (
-    <div>
-      <h2>Component B</h2>
-      <ul>{Object.values(facets).map((facet, index) => (facet.title ? <li key={index}>{facet.title}</li> : null))}</ul>
-    </div>
-  );
-};
+const FACETs = () => {};
 
 export default FACETs;
