@@ -2,7 +2,7 @@
 
 :root {
   --ash: #5b5b5b;
-  --Scheele-green: #006100;
+  --Scheele-green: #008905;
 
   --small: 16px;
   --medium: 24px;
@@ -11,7 +11,7 @@
 
   --light: 300;
   --middle: 400;
-  --heavy: 600;
+  --heavy: 700;
 }
 
 body {
@@ -24,6 +24,26 @@ body {
   font-weight: var(--middle);
   line-height: 1.4;
 }
+
+a {
+  color: var(--Scheele-green) !important ;
+  text-decoration: underline;
+}
+
+.public-DraftStyleDefault-ul {
+  list-style-type: none; /* Remove default bullet */
+}
+
+.public-DraftStyleDefault-ul li {
+  position: relative; /* Position relative for the custom marker */
+}
+
+.public-DraftStyleDefault-ul li::before {
+  content: "-"; /* Custom marker */
+  position: absolute; /* Absolute position */
+  left: -1em; /* Position the marker to the left of the list item */
+}
+
 /* The following styles are for HoneEditor component */
 .article-title {
   font-weight: var(--heavy);

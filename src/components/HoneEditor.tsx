@@ -30,11 +30,17 @@
 
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { ContentBlock, Editor, EditorState, convertToRaw } from "draft-js";
+import Editor from "@draft-js-plugins/editor";
+import createLinkify from "@draft-js-plugins/linkify";
+import "@draft-js-plugins/linkify/lib/plugin.css";
+
+import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { transformToHoneState } from "../utils/transformToHoneState";
 import { saveHoneState } from "../services/indexedDBService";
+
+const linkifyPlugin = createLinkify();
 
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
@@ -42,7 +48,23 @@ const HoneEditor = () => {
   const { articleId } = useParams();
 
   const onChange = (newEditorState: EditorState) => {
+    const selection = newEditorState.getSelection();
+    const anchorKey = selection.getAnchorKey();
+    const currentContent = newEditorState.getCurrentContent();
+    const currentContentBlock = currentContent.getBlockForKey(anchorKey);
+    const start = selection.getStartOffset();
+    const end = selection.getEndOffset();
+    const text = currentContentBlock.getText();
+
+    if (text.startsWith("- ") && currentContentBlock.getType() !== "unordered-list-item") {
+      const newContent = Modifier.replaceText(currentContent, selection.merge({ anchorOffset: 0, focusOffset: 2 }), "");
+      let newState = EditorState.push(newEditorState, newContent, "change-block-type");
+      newState = RichUtils.toggleBlockType(newState, "unordered-list-item");
+      setEditorState(newState);
+      return;
+    }
     setEditorState(newEditorState);
+
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
     const rawContentState = convertToRaw(newEditorState.getCurrentContent());
 
@@ -73,7 +95,11 @@ const HoneEditor = () => {
     return "block-padding";
   };
 
-  return <Editor editorState={editorState} onChange={onChange} blockStyleFn={blockStyleFn} />;
+  return (
+    <div>
+      <Editor editorState={editorState} onChange={onChange} blockStyleFn={blockStyleFn} plugins={[linkifyPlugin]} />
+    </div>
+  );
 };
 
 export default HoneEditor;

@@ -1,9 +1,8 @@
-import "./App.css";
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HoneEditor from "./components/HoneEditor";
 import MyHone from "./components/MyHone";
-
+import "./App.css";
 import { ErrorBoundary } from "react-error-boundary"; // the lib has useErrorBoundary hook and HOC too, check them out when testing environment is ready
 
 const App = () => {
