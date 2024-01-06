@@ -52,8 +52,6 @@ const HoneEditor = () => {
     const anchorKey = selection.getAnchorKey();
     const currentContent = newEditorState.getCurrentContent();
     const currentContentBlock = currentContent.getBlockForKey(anchorKey);
-    const start = selection.getStartOffset();
-    const end = selection.getEndOffset();
     const text = currentContentBlock.getText();
 
     if (text.startsWith("- ") && currentContentBlock.getType() !== "unordered-list-item") {
