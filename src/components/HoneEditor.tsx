@@ -37,8 +37,7 @@ import "@draft-js-plugins/linkify/lib/plugin.css";
 import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
-import { transformToHoneState } from "../utils/transformToHoneState";
-import { saveHoneState } from "../services/indexedDBService";
+import { saveArticle } from "../services/indexedDBService";
 
 const linkifyPlugin = createLinkify();
 
@@ -51,13 +50,9 @@ const HoneEditor = () => {
     setEditorState(newEditorState);
 
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
-    const rawContentState = convertToRaw(newEditorState.getCurrentContent());
-
     if (currentPlainText !== prevPlainText && articleId) {
-      const articleDate = getCurrentDate();
-
-      const transformedHoneState = transformToHoneState(articleId, articleDate, rawContentState);
-      saveHoneState(transformedHoneState, articleId); // articleId to specify the article to save
+      const updateAt = getCurrentDate();
+      saveArticle(articleId, updateAt, newEditorState);
 
       setPrevPlainText(currentPlainText);
     }

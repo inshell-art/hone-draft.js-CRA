@@ -1,24 +1,14 @@
-export type Facet = {
-  facetId?: string;
-  title?: string;
-  content?: string;
-};
+import { RawDraftContentState } from "draft-js";
 
 export type Article = {
   articleId: string;
-  date?: string;
+  updateAt?: string;
   title?: string;
-  nonFacet?: string;
+  content?: RawDraftContentState;
 };
 
-export type ArticleFacetLink = {
+export type Facet = {
   articleId: string;
-  facetId: string;
-  orderIndex: number;
-};
-
-export type HoneState = {
-  articles: Record<string, Article>;
-  facets: Record<string, Facet>;
-  articleFacetLinks: ArticleFacetLink[];
+  titleId: string;
+  contentsId: string[];
 };
