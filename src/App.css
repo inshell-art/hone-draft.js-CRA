@@ -30,20 +30,6 @@ a {
   text-decoration: underline;
 }
 
-.public-DraftStyleDefault-ul {
-  list-style-type: none; /* Remove default bullet */
-}
-
-.public-DraftStyleDefault-ul li {
-  position: relative; /* Position relative for the custom marker */
-}
-
-.public-DraftStyleDefault-ul li::before {
-  content: "-"; /* Custom marker */
-  position: absolute; /* Absolute position */
-  left: -1em; /* Position the marker to the left of the list item */
-}
-
 /* The following styles are for HoneEditor component */
 .article-title {
   font-weight: var(--heavy);

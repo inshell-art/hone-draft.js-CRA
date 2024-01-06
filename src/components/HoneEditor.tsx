@@ -48,19 +48,6 @@ const HoneEditor = () => {
   const { articleId } = useParams();
 
   const onChange = (newEditorState: EditorState) => {
-    const selection = newEditorState.getSelection();
-    const anchorKey = selection.getAnchorKey();
-    const currentContent = newEditorState.getCurrentContent();
-    const currentContentBlock = currentContent.getBlockForKey(anchorKey);
-    const text = currentContentBlock.getText();
-
-    if (text.startsWith("- ") && currentContentBlock.getType() !== "unordered-list-item") {
-      const newContent = Modifier.replaceText(currentContent, selection.merge({ anchorOffset: 0, focusOffset: 2 }), "");
-      let newState = EditorState.push(newEditorState, newContent, "change-block-type");
-      newState = RichUtils.toggleBlockType(newState, "unordered-list-item");
-      setEditorState(newState);
-      return;
-    }
     setEditorState(newEditorState);
 
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
