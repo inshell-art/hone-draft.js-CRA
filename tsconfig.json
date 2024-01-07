@@ -2,11 +2,7 @@
   "compilerOptions": {
     "downlevelIteration": true,
     "target": "es2015",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -21,12 +17,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": [
-    "src"
-  ], 
-  "exclude": [
-    "src/components/FACETs.tsx",
-    "src/hooks/useHoneState.ts",
-    "src/services/db.ts"   
-  ]
+  "include": ["src"],
+  "exclude": ["src/components/FACETs.tsx", "src/hooks/useHoneState.ts", "src/services/db.ts", "src/utils/transformToHoneState.ts"]
 }

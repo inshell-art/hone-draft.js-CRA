@@ -10,32 +10,34 @@
  * facet title is the first block (defined by draft.js) of a facet, which starts with a symbol "$",
  * and facet content is the blocks after facet title.
  * blocks not in facets are non-facets.
+ * block start with ~ is a not-facet.
  *
- * Users can compare and merge facets in the editor, which is the core feature of Hone:
+ * Users can compare and insert facets in the editor, which is the core feature of Hone:
  * it could polish (hone) the facets in multiple articles to propose the users' thoughts, that is,
  * articles are not the place to present thoughts, rather, the scenarios and context to polish thoughts as facets:
  * and facets are the essence of cognition of users.
  *
  * All operations of Hone are based on this component,
- * except for the operations of the articles list in MyHone.tsx.
+ * except article deletion and Hone publishing that are in MyHone.tsx.
  *
  * Features:
- * 1. Create and edit articles
- * 2. Create and edit facets
- * 3. Compare and merge facets
- * 4. Save/load articles
- * 5. style articles and facets
+ * Create and edit articles
+ * Create and edit facets
+ * Create non-facets and not-facets
+ * Compare and insert facets
+ * Save/load articles
+ * style articles and facets
  */
 // #endregion description
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Editor from "@draft-js-plugins/editor";
 import createLinkify from "@draft-js-plugins/linkify";
 import "@draft-js-plugins/linkify/lib/plugin.css";
 
 import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier } from "draft-js";
-import { getCurrentDate } from "../utils/utils";
+import { getCurrentDate, loadArticle } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { saveArticle } from "../services/indexedDBService";
 
@@ -45,6 +47,13 @@ const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
+
+  // load article from indexedDB with useEffect
+  useEffect(() => {
+    if (articleId) {
+      loadArticle(articleId);
+    }
+  }, [articleId]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
