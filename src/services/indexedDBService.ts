@@ -1,13 +1,10 @@
 import Dexie from "dexie";
 import { Article, Facet } from "../types/types";
-import isEqual from "lodash/isEqual";
-import { PAGE_SIZE } from "../utils/constants";
-import { EditorState, convertToRaw, convertFromRaw } from "draft-js";
 
 // Initialize database
 class HoneDatabase extends Dexie {
   articles: Dexie.Table<Article, string>;
-  facets: Dexie.Table<Facet, string>;
+  facets: Dexie.Table<Facet, [string, string]>;
 
   constructor() {
     super("HoneDatabase");
@@ -23,12 +20,11 @@ class HoneDatabase extends Dexie {
 
 export const db = new HoneDatabase();
 
-export const saveArticle = async (article: Article) => {
+export const submitArticle = async (article: Article) => {
   await db.articles.put(article);
 };
 
-// load article
-export const loadArticle = async (articleId: string) => {
+export const fetchArticle = async (articleId: string) => {
   const article = await db.articles.get(articleId);
   return article;
 };

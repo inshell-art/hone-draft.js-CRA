@@ -39,42 +39,59 @@ import "@draft-js-plugins/linkify/lib/plugin.css";
 import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier, convertFromHTML, convertFromRaw } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
-import { saveArticle, loadArticle } from "../services/indexedDBService";
+import { submitArticle, fetchArticle } from "../services/indexedDBService";
+import { set } from "lodash";
+import { Article } from "../types/types";
+import { syncFacetsFromArticle } from "../services/facetService";
 
 const linkifyPlugin = createLinkify();
+
+const assembleArticle = (articleId: string, editorState: EditorState) => {
+  const updateAt = getCurrentDate();
+  const title = editorState.getCurrentContent().getFirstBlock().getText();
+  const rawContent = convertToRaw(editorState.getCurrentContent());
+  return { articleId, updateAt, title, rawContent };
+};
+
+const convertToEditorState = (article: Article): EditorState => {
+  let editorState = EditorState.createEmpty();
+  if (article?.rawContent) {
+    const contentState = convertFromRaw(article.rawContent);
+    editorState = EditorState.createWithContent(contentState);
+  }
+
+  return editorState;
+};
 
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
 
-  // load article from indexedDB
+  // load article
   useEffect(() => {
-    if (articleId) {
-      let editorState = EditorState.createEmpty();
-      loadArticle(articleId).then((article) => {
-        if (article?.rawContent) {
-          const contentState = convertFromRaw(article.rawContent);
-          editorState = EditorState.createWithContent(contentState);
-        }
-        setEditorState(editorState);
-        setPrevPlainText(editorState.getCurrentContent().getPlainText());
-      });
-    }
+    if (!articleId) return;
+
+    fetchArticle(articleId).then((article) => {
+      if (!article) return;
+
+      const editorState = convertToEditorState(article);
+      setEditorState(editorState);
+      setPrevPlainText(editorState.getCurrentContent().getPlainText());
+    });
   }, [articleId]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
 
+    // save article
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
     if (currentPlainText !== prevPlainText && articleId) {
-      const updateAt = getCurrentDate();
-      const title = editorState.getCurrentContent().getFirstBlock().getText();
-      const rawContent = convertToRaw(newEditorState.getCurrentContent());
-      const article = { articleId, updateAt, title, rawContent };
-      saveArticle(article);
-
+      const article = assembleArticle(articleId, newEditorState);
+      submitArticle(article);
       setPrevPlainText(currentPlainText);
+
+      syncFacetsFromArticle(articleId); // sync facets store from article store when article is updated
     }
   };
 
