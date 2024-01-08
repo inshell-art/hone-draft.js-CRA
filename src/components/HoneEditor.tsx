@@ -36,10 +36,10 @@ import Editor from "@draft-js-plugins/editor";
 import createLinkify from "@draft-js-plugins/linkify";
 import "@draft-js-plugins/linkify/lib/plugin.css";
 
-import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier } from "draft-js";
-import { getCurrentDate, loadArticle } from "../utils/utils";
+import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier, convertFromHTML, convertFromRaw } from "draft-js";
+import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
-import { saveArticle } from "../services/indexedDBService";
+import { saveArticle, loadArticle } from "../services/indexedDBService";
 
 const linkifyPlugin = createLinkify();
 
@@ -48,10 +48,18 @@ const HoneEditor = () => {
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
 
-  // load article from indexedDB with useEffect
+  // load article from indexedDB
   useEffect(() => {
     if (articleId) {
-      loadArticle(articleId);
+      let editorState = EditorState.createEmpty();
+      loadArticle(articleId).then((article) => {
+        if (article?.rawContent) {
+          const contentState = convertFromRaw(article.rawContent);
+          editorState = EditorState.createWithContent(contentState);
+        }
+        setEditorState(editorState);
+        setPrevPlainText(editorState.getCurrentContent().getPlainText());
+      });
     }
   }, [articleId]);
 
@@ -61,7 +69,10 @@ const HoneEditor = () => {
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
     if (currentPlainText !== prevPlainText && articleId) {
       const updateAt = getCurrentDate();
-      saveArticle(articleId, updateAt, newEditorState);
+      const title = editorState.getCurrentContent().getFirstBlock().getText();
+      const rawContent = convertToRaw(newEditorState.getCurrentContent());
+      const article = { articleId, updateAt, title, rawContent };
+      saveArticle(article);
 
       setPrevPlainText(currentPlainText);
     }

@@ -4,7 +4,7 @@ export type Article = {
   articleId: string;
   updateAt?: string;
   title?: string;
-  content?: RawDraftContentState;
+  rawContent?: RawDraftContentState;
 };
 
 export type Facet = {
