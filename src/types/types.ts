@@ -10,5 +10,7 @@ export type Article = {
 export type Facet = {
   articleId: string;
   titleId: string;
+  facetId: string;
+  title?: string;
   contentsId: string[];
 };

@@ -30,19 +30,19 @@
  */
 // #endregion description
 
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Editor from "@draft-js-plugins/editor";
 import createLinkify from "@draft-js-plugins/linkify";
-import "@draft-js-plugins/linkify/lib/plugin.css";
 
-import { ContentBlock, EditorState, convertToRaw, RichUtils, Modifier, convertFromHTML, convertFromRaw } from "draft-js";
+import { ContentBlock, EditorState, convertToRaw, convertFromRaw, ContentState } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle } from "../services/indexedDBService";
 import { set } from "lodash";
 import { Article } from "../types/types";
 import { syncFacetsFromArticle } from "../services/facetService";
+import { v4 as uuidv4 } from "uuid";
 
 const linkifyPlugin = createLinkify();
 
@@ -66,29 +66,49 @@ const convertToEditorState = (article: Article): EditorState => {
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
-  const { articleId } = useParams();
+  const { id } = useParams();
+  let articleId = id;
+  const navigate = useNavigate();
+  const editorRef = useRef<Editor>(null);
 
   // load article
   useEffect(() => {
     if (!articleId) return;
+    console.log("articleId", articleId);
 
-    fetchArticle(articleId).then((article) => {
-      if (!article) return;
-
-      const editorState = convertToEditorState(article);
-      setEditorState(editorState);
-      setPrevPlainText(editorState.getCurrentContent().getPlainText());
-    });
+    if (articleId === "new") {
+      const newArticleId = uuidv4();
+      articleId = newArticleId;
+      navigate(`/article/${newArticleId}`);
+    } else {
+      articleId &&
+        fetchArticle(articleId).then((article) => {
+          if (!article) {
+            setEditorState(EditorState.createEmpty());
+          } else {
+            const editorState = convertToEditorState(article);
+            setEditorState(editorState);
+          }
+          setPrevPlainText(editorState.getCurrentContent().getPlainText());
+        });
+    }
   }, [articleId]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, [editorRef]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
 
     // save article
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
-    if (currentPlainText !== prevPlainText && articleId) {
+    if (currentPlainText !== prevPlainText && currentPlainText !== "" && articleId) {
       const article = assembleArticle(articleId, newEditorState);
       submitArticle(article);
+      console.log("article text", currentPlainText);
       setPrevPlainText(currentPlainText);
 
       syncFacetsFromArticle(articleId); // sync facets store from article store when article is updated
@@ -113,8 +133,15 @@ const HoneEditor = () => {
   };
 
   return (
-    <div>
-      <Editor editorState={editorState} onChange={onChange} blockStyleFn={blockStyleFn} plugins={[linkifyPlugin]} />
+    <div className="article">
+      <Editor
+        key={articleId}
+        ref={editorRef}
+        editorState={editorState}
+        onChange={onChange}
+        blockStyleFn={blockStyleFn}
+        plugins={[linkifyPlugin]}
+      />
     </div>
   );
 };

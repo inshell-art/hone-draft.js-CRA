@@ -30,23 +30,31 @@ const extractFacetsFromArticle = (article: Article): Facet[] => {
     const isNotFacet = block.text.startsWith(NOT_FACET_SYMBOL);
     const isLastBlock = block.key === blocks[blocks.length - 1].key;
 
-    if (isFacetTitle) {
-      if (currentFacet) {
-        facets.push(currentFacet);
-        currentFacet = null;
-      }
+    if (isNotFacet) {
+      return;
+    } else {
+      if (isFacetTitle) {
+        if (currentFacet) {
+          facets.push(currentFacet);
+          currentFacet = null;
+        }
 
-      currentFacet = { articleId: article.articleId, titleId: block.key, contentsId: [] };
-      facets.push(currentFacet);
-    } else if (currentFacet) {
-      if (isNotFacet) return;
-      currentFacet.contentsId.push(block.key);
-    }
-
-    if (isLastBlock && !isFacetTitle) {
-      if (currentFacet) {
+        const titleId = block.key;
+        const facetId = `${article.articleId}-${titleId}`;
+        currentFacet = { articleId: article.articleId, titleId, facetId, title: block.text, contentsId: [] };
         facets.push(currentFacet);
-        currentFacet = null;
+      } else {
+        if (isLastBlock) {
+          if (currentFacet) {
+            currentFacet.contentsId.push(block.key);
+            facets.push(currentFacet);
+            currentFacet = null;
+          }
+        } else {
+          if (currentFacet) {
+            currentFacet.contentsId.push(block.key);
+          }
+        }
       }
     }
   });
@@ -60,7 +68,7 @@ const syncFacetsToDB = async (articleId: string, newFacets: Facet[]) => {
 
   for (const facet of existingFacets) {
     if (!newFacetsId.includes(facet.titleId)) {
-      await db.facets.delete([articleId, facet.titleId]);
+      await db.facets.delete(facet.facetId);
     }
   }
 
@@ -73,8 +81,6 @@ const syncFacetsToDB = async (articleId: string, newFacets: Facet[]) => {
 export const syncFacetsFromArticle = async (articleId: string) => {
   const article = await db.articles.get(articleId);
   if (!article) return;
-  console.log(article);
   const facets = extractFacetsFromArticle(article);
-  console.log(facets);
   await syncFacetsToDB(articleId, facets);
 };

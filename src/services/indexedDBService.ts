@@ -4,13 +4,13 @@ import { Article, Facet } from "../types/types";
 // Initialize database
 class HoneDatabase extends Dexie {
   articles: Dexie.Table<Article, string>;
-  facets: Dexie.Table<Facet, [string, string]>;
+  facets: Dexie.Table<Facet, string>;
 
   constructor() {
     super("HoneDatabase");
     this.version(1).stores({
       articles: "articleId, updateAt, title",
-      facets: "[articleId+titleId], contentsId",
+      facets: "facetId, articleId, title, contentsId",
     });
 
     this.articles = this.table("articles");
@@ -27,4 +27,15 @@ export const submitArticle = async (article: Article) => {
 export const fetchArticle = async (articleId: string) => {
   const article = await db.articles.get(articleId);
   return article;
+};
+
+export const fetchAllArticles = async () => {
+  const articles = await db.articles.toArray();
+  return articles;
+};
+
+// fetch all facets from indexedDB
+export const fetchAllFacets = async () => {
+  const facets = await db.facets.toArray();
+  return facets;
 };

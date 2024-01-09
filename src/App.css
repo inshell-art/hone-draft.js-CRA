@@ -1,8 +1,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap");
 
 :root {
+  --light-white: #f0f0f0;
+  --light-black: #0f0f0f;
+  --dark-white: #c1c1c1;
+  --dark-black: #191919;
   --ash: #5b5b5b;
   --Scheele-green: #008905;
+  --Mark-blue: #2d7dd2;
 
   --small: 16px;
   --medium: 24px;
@@ -15,8 +20,8 @@
 }
 
 body {
-  background-color: #f0f0f0;
-  color: #0f0f0f;
+  background-color: var(--light-white);
+  color: var(--light-black);
   width: 780px;
   margin: var(--medium) auto;
   font-family: "Source Code Pro", monospace;
@@ -25,12 +30,39 @@ body {
   line-height: 1.4;
 }
 
-a {
-  color: var(--Scheele-green) !important ;
-  text-decoration: underline;
+.main a {
+  text-decoration: none;
+}
+
+.nav-bar {
+  font-weight: var(--medium);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: var(--large);
+}
+.nav-bar a {
+  color: var(--ash);
+  text-decoration: none;
+}
+.nav-bar-right {
+  margin-left: auto;
+}
+
+.nav-link-active {
+  color: var(--Scheele-green) !important;
+}
+
+.nav-active-articles {
+  color: var(--Mark-blue) !important;
 }
 
 /* The following styles are for HoneEditor component */
+.article a {
+  color: var(--light-black);
+  text-decoration: underline;
+  padding: 0px;
+}
+
 .article-title {
   font-weight: var(--heavy);
   font-size: var(--large);
@@ -52,29 +84,48 @@ a {
   font-weight: var(--light);
 }
 
-/* The following styles are for MyHone component */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* The following styles are for Articles component */
+.articles-item {
+  padding-top: var(--medium);
+  font-size: var(--medium);
 }
 
-.header-title {
-  font-size: var(--large);
-  font-weight: var(--light);
+.articles-item a {
+  color: var(--Mark-blue);
+  text-decoration: none;
 }
 
-.create-article-btn {
-  padding: 5px 10px;
+.articles-date {
   font-size: var(--small);
   font-weight: var(--light);
-  cursor: pointer;
+  color: var(--ash);
+}
+
+/* The following styles are for FACETs */
+
+.FACETs a {
+  color: var(--Scheele-green);
+  text-decoration: none;
+}
+
+.honed-facet {
+  font-size: var(--medium);
+  font-weight: var(--middle);
+  padding-top: var(--medium);
+}
+
+.honing-facet {
+  font-size: var(--small);
+  font-weight: var(--light);
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #191919;
-    color: #c1c1c1;
+    background-color: var(--dark-black);
+    color: var(--dark-white);
+  }
+  .article a {
+    color: var(--dark-white);
   }
 
   .not-facet {
