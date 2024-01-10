@@ -31,18 +31,15 @@
 // #endregion description
 
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Editor from "@draft-js-plugins/editor";
 import createLinkify from "@draft-js-plugins/linkify";
-
 import { ContentBlock, EditorState, convertToRaw, convertFromRaw, ContentState } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle } from "../services/indexedDBService";
-import { set } from "lodash";
-import { Article } from "../types/types";
 import { syncFacetsFromArticle } from "../services/facetService";
-import { v4 as uuidv4 } from "uuid";
+import { set } from "lodash";
 
 const linkifyPlugin = createLinkify();
 
@@ -53,53 +50,45 @@ const assembleArticle = (articleId: string, editorState: EditorState) => {
   return { articleId, updateAt, title, rawContent };
 };
 
-const convertToEditorState = (article: Article): EditorState => {
-  let editorState = EditorState.createEmpty();
+const initializeArticle = async (articleId: string): Promise<EditorState> => {
+  const article = await fetchArticle(articleId);
   if (article?.rawContent) {
     const contentState = convertFromRaw(article.rawContent);
-    editorState = EditorState.createWithContent(contentState);
+    return EditorState.createWithContent(contentState);
+  } else {
+    return EditorState.createEmpty();
   }
+};
 
-  return editorState;
+const HoneFacet = () => {
+  return <div>Checking facets...</div>;
 };
 
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
-  const navigate = useNavigate();
-  const editorRef = useRef<Editor>(null);
+  const [isFacetChecking, setIsFacetChecking] = useState(false);
 
-  // load article
+  // initialize the editor with the article
   useEffect(() => {
     if (!articleId) return;
 
-    fetchArticle(articleId).then((article) => {
-      if (!article) {
-        setEditorState(EditorState.createEmpty());
-      } else {
-        const editorState = convertToEditorState(article);
-        setEditorState(editorState);
-      }
+    const editorStatePromise = initializeArticle(articleId);
+    editorStatePromise.then((editorState) => {
+      setEditorState(editorState);
       setPrevPlainText(editorState.getCurrentContent().getPlainText());
     });
-  }, [articleId, navigate, editorRef, setEditorState, setPrevPlainText, editorState]);
-
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-    }
-  }, [editorRef]);
+  }, [articleId]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
 
     // save article
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
-    if (currentPlainText !== prevPlainText && currentPlainText !== "" && articleId) {
+    if (currentPlainText !== prevPlainText && articleId) {
       const article = assembleArticle(articleId, newEditorState);
       submitArticle(article);
-      console.log("article text", currentPlainText);
       setPrevPlainText(currentPlainText);
 
       syncFacetsFromArticle(articleId); // sync facets store from article store when article is updated
@@ -123,14 +112,40 @@ const HoneEditor = () => {
     return "block-padding";
   };
 
+  // when cmd + enter is pressed
+  const keyBindingFn = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && e.metaKey) {
+      return "check-facets";
+    }
+    return "not-handled";
+  };
+
+  const handleKeyCommand = (command: string, editorState: EditorState) => {
+    if (command === "check-facets") {
+      const selection = editorState.getSelection();
+      const startOffset = selection.getStartOffset();
+
+      if (startOffset === 0) {
+        setIsFacetChecking(true);
+      }
+    }
+    return "not-handled";
+  };
+
   return (
     <div className="article">
+      <div>
+        {" "}
+        <HoneFacet />
+      </div>
       <Editor
-        ref={editorRef}
         editorState={editorState}
         onChange={onChange}
         blockStyleFn={blockStyleFn}
         plugins={[linkifyPlugin]}
+        placeholder="Please write your article here."
+        handleKeyCommand={handleKeyCommand}
+        keyBindingFn={keyBindingFn}
       />
     </div>
   );

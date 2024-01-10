@@ -32,7 +32,7 @@ const App = () => {
               </>
             }
           />
-          <Route path="/article/:id" element={<HoneEditor />} />
+          <Route path="/article/:articleId" element={<HoneEditor />} />
         </Routes>
       </Router>
     </ErrorBoundary>

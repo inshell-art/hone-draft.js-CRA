@@ -29,8 +29,15 @@ body {
   line-height: 1.4;
 }
 
-.main a {
-  text-decoration: none;
+.public-DraftEditorPlaceholder-root {
+  padding-top: var(--large);
+  font-size: var(--large);
+  font-weight: var(--light);
+  color: var(--ash);
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 /* For NavBar */
@@ -69,8 +76,8 @@ body {
 
 /* For HoneEditor */
 .article a {
-  color: var(--light-black);
-  text-decoration: underline;
+  color: var(--light-black) !important  ;
+  text-decoration: underline !important;
   padding: 0px;
 }
 

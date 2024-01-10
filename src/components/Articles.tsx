@@ -25,8 +25,8 @@ const Articles = () => {
     <div>
       <div>
         {articles.map((article) => (
-          <div className="articles-item">
-            <Link to={`/article/${article.articleId}`}>{article.title}</Link>
+          <div key={article.articleId} className="articles-item">
+            <Link to={`/article/${article.articleId}`}>{article.title ? article.title : "Untitled article"} </Link>
             <div className="articles-date">{article.updateAt}</div>
           </div>
         ))}

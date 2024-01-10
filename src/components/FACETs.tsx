@@ -21,7 +21,7 @@ const FACETs = () => {
     <div>
       <div className="FACETs">
         {facets.map((facet) => (
-          <div className="honed-facet">
+          <div key={facet.facetId} className="honed-facet">
             <Link to={`/article/${facet.articleId}`}>{facet.title}</Link>
             <div className="honing-facet">
               <Link to={`/article/${facet.articleId}`}>[0.712] {facet.title}</Link>
