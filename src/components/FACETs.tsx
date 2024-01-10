@@ -24,7 +24,7 @@ const FACETs = () => {
           <div className="honed-facet">
             <Link to={`/article/${facet.articleId}`}>{facet.title}</Link>
             <div className="honing-facet">
-              <Link to={`/article/${facet.articleId}`}>[similarity] {facet.title}</Link>
+              <Link to={`/article/${facet.articleId}`}>[0.712] {facet.title}</Link>
             </div>
           </div>
         ))}

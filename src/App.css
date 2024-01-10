@@ -5,9 +5,8 @@
   --light-black: #0f0f0f;
   --dark-white: #c1c1c1;
   --dark-black: #191919;
-  --ash: #5b5b5b;
+  --ash: #777777;
   --Scheele-green: #008905;
-  --Mark-blue: #2d7dd2;
 
   --small: 16px;
   --medium: 24px;
@@ -16,7 +15,7 @@
 
   --light: 300;
   --middle: 400;
-  --heavy: 700;
+  --heavy: 600;
 }
 
 body {
@@ -34,29 +33,41 @@ body {
   text-decoration: none;
 }
 
+/* For NavBar */
 .nav-bar {
   font-weight: var(--medium);
   display: flex;
   justify-content: space-between;
-  padding-bottom: var(--large);
+  padding-bottom: var(--medium);
 }
 .nav-bar a {
   color: var(--ash);
   text-decoration: none;
 }
+
 .nav-bar-right {
   margin-left: auto;
 }
 
-.nav-link-active {
+.active-facets {
   color: var(--Scheele-green) !important;
 }
 
-.nav-active-articles {
-  color: var(--Mark-blue) !important;
+.active-articles {
+  color: var(--light-black) !important;
 }
 
-/* The following styles are for HoneEditor component */
+.create-article {
+  background-color: transparent;
+  font-size: var(--small);
+  color: var(--ash);
+  font-family: "Source Code Pro", monospace;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* For HoneEditor */
 .article a {
   color: var(--light-black);
   text-decoration: underline;
@@ -75,6 +86,7 @@ body {
 }
 
 .facet-title {
+  color: var(--Scheele-green);
   font-weight: var(--heavy);
   padding-top: var(--large);
 }
@@ -84,14 +96,14 @@ body {
   font-weight: var(--light);
 }
 
-/* The following styles are for Articles component */
+/* For Articles */
 .articles-item {
   padding-top: var(--medium);
   font-size: var(--medium);
 }
 
 .articles-item a {
-  color: var(--Mark-blue);
+  color: var(--light-black);
   text-decoration: none;
 }
 
@@ -130,5 +142,17 @@ body {
 
   .not-facet {
     font-weight: calc(var(--light) - 100);
+  }
+
+  .active-articles {
+    color: var(--light-white) !important;
+  }
+
+  .create-article {
+    color: var(--dark-white) !important;
+  }
+
+  .articles-item a {
+    color: var(--dark-white);
   }
 }

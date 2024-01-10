@@ -66,33 +66,24 @@ const convertToEditorState = (article: Article): EditorState => {
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
-  const { id } = useParams();
-  let articleId = id;
+  const { articleId } = useParams();
   const navigate = useNavigate();
   const editorRef = useRef<Editor>(null);
 
   // load article
   useEffect(() => {
     if (!articleId) return;
-    console.log("articleId", articleId);
 
-    if (articleId === "new") {
-      const newArticleId = uuidv4();
-      articleId = newArticleId;
-      navigate(`/article/${newArticleId}`);
-    } else {
-      articleId &&
-        fetchArticle(articleId).then((article) => {
-          if (!article) {
-            setEditorState(EditorState.createEmpty());
-          } else {
-            const editorState = convertToEditorState(article);
-            setEditorState(editorState);
-          }
-          setPrevPlainText(editorState.getCurrentContent().getPlainText());
-        });
-    }
-  }, [articleId]);
+    fetchArticle(articleId).then((article) => {
+      if (!article) {
+        setEditorState(EditorState.createEmpty());
+      } else {
+        const editorState = convertToEditorState(article);
+        setEditorState(editorState);
+      }
+      setPrevPlainText(editorState.getCurrentContent().getPlainText());
+    });
+  }, [articleId, navigate, editorRef, setEditorState, setPrevPlainText, editorState]);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -135,7 +126,6 @@ const HoneEditor = () => {
   return (
     <div className="article">
       <Editor
-        key={articleId}
         ref={editorRef}
         editorState={editorState}
         onChange={onChange}
