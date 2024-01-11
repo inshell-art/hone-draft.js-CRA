@@ -8,6 +8,7 @@
   --ash: #777777;
   --Scheele-green: #008905;
 
+  --tiny: 8px;
   --small: 16px;
   --medium: 24px;
   --large: 40px;
@@ -75,10 +76,8 @@ body {
 }
 
 /* For HoneEditor */
-.article a {
-  color: var(--light-black) !important  ;
-  text-decoration: underline !important;
-  padding: 0px;
+.article.no-scroll {
+  overflow: hidden;
 }
 
 .article-title {
@@ -103,7 +102,35 @@ body {
   font-weight: var(--light);
 }
 
-/* For Articles */
+/* For HonePanel */
+.hone-panel {
+  position: absolute;
+  width: 780px;
+  margin-top: var(--small);
+}
+
+.hone-panel-title {
+  padding: var(--tiny);
+  margin-bottom: var(--small);
+  background-color: white;
+
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hone-panel-content {
+  background-color: white;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.facet-item {
+  padding: var(--tiny);
+}
+
+.facet-item.highlighted {
+  background-color: #fafafa;
+}
+
+/* For Articles list*/
 .articles-item {
   padding-top: var(--medium);
   font-size: var(--medium);
@@ -120,7 +147,7 @@ body {
   color: var(--ash);
 }
 
-/* The following styles are for FACETs */
+/* For FACETs */
 
 .FACETs a {
   color: var(--Scheele-green);

@@ -32,16 +32,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import Editor from "@draft-js-plugins/editor";
-import createLinkify from "@draft-js-plugins/linkify";
-import { ContentBlock, EditorState, convertToRaw, convertFromRaw, ContentState } from "draft-js";
+
+import { Editor, ContentBlock, EditorState, convertToRaw, convertFromRaw, getDefaultKeyBinding } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle } from "../services/indexedDBService";
 import { syncFacetsFromArticle } from "../services/facetService";
 import { set } from "lodash";
-
-const linkifyPlugin = createLinkify();
+import HonePanel from "./HonePanel";
+import { is } from "immutable";
 
 const assembleArticle = (articleId: string, editorState: EditorState) => {
   const updateAt = getCurrentDate();
@@ -60,15 +59,13 @@ const initializeArticle = async (articleId: string): Promise<EditorState> => {
   }
 };
 
-const HoneFacet = () => {
-  return <div>Checking facets...</div>;
-};
-
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
-  const [isFacetChecking, setIsFacetChecking] = useState(false);
+  const [activeHonePanel, setActiveHonePanel] = useState(false);
+  const [HonePanelTopPosition, setHonePanelTopPosition] = useState(0);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // initialize the editor with the article
   useEffect(() => {
@@ -80,6 +77,29 @@ const HoneEditor = () => {
       setPrevPlainText(editorState.getCurrentContent().getPlainText());
     });
   }, [articleId]);
+
+  // Capture the Esc key when the focus is outside the editor to ensure that the HonePanel can be closed
+  useEffect(() => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveHonePanel(false);
+      }
+    };
+
+    document.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      document.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeHonePanel) {
+      document?.querySelector(".public-DraftEditor-content")?.classList.add("no-scroll");
+    } else {
+      document?.querySelector(".article")?.classList.remove("no-scroll");
+    }
+  }, [activeHonePanel]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
@@ -115,38 +135,63 @@ const HoneEditor = () => {
   // when cmd + enter is pressed
   const keyBindingFn = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && e.metaKey) {
-      return "check-facets";
+      return "activate-hone-panel";
     }
-    return "not-handled";
+    if (e.key === "Escape") {
+      return "deactivate-hone-panel";
+    }
+    return getDefaultKeyBinding(e); // Handle other keys normally
   };
 
-  const handleKeyCommand = (command: string, editorState: EditorState) => {
-    if (command === "check-facets") {
-      const selection = editorState.getSelection();
-      const startOffset = selection.getStartOffset();
+  // handle cmd + enter
+  const handleKeyCommand = (command: string) => {
+    if (command === "activate-hone-panel") {
+      const anchorKey = editorState.getSelection().getAnchorKey();
+      const startOffset = editorState.getSelection().getStartOffset();
+      const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
+      const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
+      const isStartOfBlock = startOffset === 0;
+      const isArticleTitle = anchorKey === firstBlockKey;
 
-      if (startOffset === 0) {
-        setIsFacetChecking(true);
+      if (isBlockEmpty && isStartOfBlock && !isArticleTitle) {
+        const editorRoot = editorRef.current;
+        let topPosition = 0;
+
+        if (editorRoot) {
+          const node = editorRoot.querySelector(`[data-offset-key="${anchorKey}-0-0"]`);
+          if (node) {
+            const rect = node.getBoundingClientRect();
+            topPosition = rect.top + window.scrollY;
+          }
+        }
+
+        setActiveHonePanel(true);
+        setHonePanelTopPosition(topPosition);
+        return "handled";
       }
+    } else if (command === "deactivate-hone-panel") {
+      setActiveHonePanel(false);
+      return "not-handled";
     }
     return "not-handled";
   };
 
   return (
-    <div className="article">
-      <div>
-        {" "}
-        <HoneFacet />
+    <div>
+      <div ref={editorRef} className="article">
+        <Editor
+          editorState={editorState}
+          onChange={onChange}
+          blockStyleFn={blockStyleFn}
+          placeholder="Please write here."
+          keyBindingFn={keyBindingFn}
+          handleKeyCommand={handleKeyCommand}
+          readOnly={activeHonePanel}
+        />
       </div>
-      <Editor
-        editorState={editorState}
-        onChange={onChange}
-        blockStyleFn={blockStyleFn}
-        plugins={[linkifyPlugin]}
-        placeholder="Please write your article here."
-        handleKeyCommand={handleKeyCommand}
-        keyBindingFn={keyBindingFn}
-      />
+      <div>
+        <HonePanel isActive={activeHonePanel} topPosition={HonePanelTopPosition} />
+      </div>
     </div>
   );
 };

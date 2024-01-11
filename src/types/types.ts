@@ -14,3 +14,8 @@ export type Facet = {
   title?: string;
   contentsId: string[];
 };
+
+export type HonePanelProps = {
+  isActive: Boolean;
+  topPosition: number; // only vertical
+};
