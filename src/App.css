@@ -76,10 +76,6 @@ body {
 }
 
 /* For HoneEditor */
-.article.no-scroll {
-  overflow: hidden;
-}
-
 .article-title {
   font-weight: var(--heavy);
   font-size: var(--large);
