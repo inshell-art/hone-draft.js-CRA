@@ -1,10 +1,9 @@
 import { HonePanelProps } from "../types/types";
 import { fetchAllFacets } from "../services/indexedDBService";
 import { Facet } from "../types/types";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
-// HonePanel.jsx
-const HonePanel = ({ isActive, topPosition }: HonePanelProps) => {
+const HonePanel = React.forwardRef<HTMLDivElement, HonePanelProps>(({ isActive, topPosition }: HonePanelProps, ref) => {
   const [facets, setFacets] = useState<Facet[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
 
@@ -40,23 +39,21 @@ const HonePanel = ({ isActive, topPosition }: HonePanelProps) => {
   };
 
   return (
-    <div>
-      <div style={passPosition} className="hone-panel">
-        <div className="hone-panel-title">Select a facet to insert by enter</div>
-        <div className="hone-panel-content">
-          {facets.map((facet, index) => (
-            <div
-              key={index}
-              className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
-              onMouseOver={() => handleMouseOver(index)}
-            >
-              {facet.title}
-            </div>
-          ))}
-        </div>
+    <div ref={ref} style={passPosition} className="hone-panel">
+      <div className="hone-panel-title">Select a facet to insert by enter</div>
+      <div className="hone-panel-content">
+        {facets.map((facet, index) => (
+          <div
+            key={index}
+            className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
+            onMouseOver={() => handleMouseOver(index)}
+          >
+            {facet.title}
+          </div>
+        ))}
       </div>
     </div>
   );
-};
+});
 
 export default HonePanel;

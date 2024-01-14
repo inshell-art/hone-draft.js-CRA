@@ -30,6 +30,7 @@ body {
   line-height: 1.4;
 }
 
+/* For placeholder in hone editor */
 .public-DraftEditorPlaceholder-root {
   padding-top: var(--large);
   font-size: var(--large);

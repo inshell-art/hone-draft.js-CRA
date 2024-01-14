@@ -33,7 +33,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 
-import { Editor, ContentBlock, EditorState, convertToRaw, convertFromRaw, getDefaultKeyBinding } from "draft-js";
+import { Editor, ContentBlock, EditorState, convertToRaw, convertFromRaw, getDefaultKeyBinding, SelectionState } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle } from "../services/indexedDBService";
@@ -41,6 +41,7 @@ import { syncFacetsFromArticle } from "../services/facetService";
 import { set } from "lodash";
 import HonePanel from "./HonePanel";
 import { is } from "immutable";
+import e from "express";
 
 const assembleArticle = (articleId: string, editorState: EditorState) => {
   const updateAt = getCurrentDate();
@@ -61,11 +62,41 @@ const initializeArticle = async (articleId: string): Promise<EditorState> => {
 
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
-  const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const { articleId } = useParams();
+  const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
+  const editorRef = useRef<HTMLDivElement>(null);
+  const honePanelRef = useRef<HTMLDivElement>(null);
   const [activeHonePanel, setActiveHonePanel] = useState(false);
   const [HonePanelTopPosition, setHonePanelTopPosition] = useState(0);
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [savedSelection, setSavedSelection] = useState<SelectionState | null>(null);
+
+  // helper function to activiate HonePanel
+  const launchHonePanel = () => {
+    const currentSelection = editorState.getSelection();
+    const anchorKey = currentSelection.getAnchorKey();
+    const startOffset = currentSelection.getStartOffset();
+    const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
+    const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
+    const isStartOfBlock = startOffset === 0;
+    const isArticleTitle = anchorKey === firstBlockKey;
+
+    if (isBlockEmpty && isStartOfBlock && !isArticleTitle) {
+      const editorRoot = editorRef.current;
+      let topPosition = 0;
+
+      if (editorRoot) {
+        const node = editorRoot.querySelector(`[data-offset-key="${anchorKey}-0-0"]`);
+        if (node) {
+          const rect = node.getBoundingClientRect();
+          topPosition = rect.top + window.scrollY;
+        }
+      }
+
+      setSavedSelection(currentSelection);
+      setHonePanelTopPosition(topPosition);
+      setActiveHonePanel(true);
+    }
+  };
 
   // initialize the editor with the article
   useEffect(() => {
@@ -82,6 +113,7 @@ const HoneEditor = () => {
   useEffect(() => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        console.log("escape");
         setActiveHonePanel(false);
       }
     };
@@ -93,13 +125,22 @@ const HoneEditor = () => {
     };
   }, []);
 
+  // Close the HonePanel when the focus is outside the editor
   useEffect(() => {
-    if (activeHonePanel) {
-      document?.querySelector(".public-DraftEditor-content")?.classList.add("no-scroll");
-    } else {
-      document?.querySelector(".article")?.classList.remove("no-scroll");
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      if (activeHonePanel && honePanelRef.current && !honePanelRef.current.contains(target)) {
+        setActiveHonePanel(false);
+      }
     }
-  }, [activeHonePanel]);
+
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeHonePanel, honePanelRef]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
@@ -138,6 +179,7 @@ const HoneEditor = () => {
       return "activate-hone-panel";
     }
     if (e.key === "Escape") {
+      console.log("escape");
       return "deactivate-hone-panel";
     }
     return getDefaultKeyBinding(e); // Handle other keys normally
@@ -146,8 +188,9 @@ const HoneEditor = () => {
   // handle cmd + enter
   const handleKeyCommand = (command: string) => {
     if (command === "activate-hone-panel") {
-      const anchorKey = editorState.getSelection().getAnchorKey();
-      const startOffset = editorState.getSelection().getStartOffset();
+      const currentSelection = editorState.getSelection();
+      const anchorKey = currentSelection.getAnchorKey();
+      const startOffset = currentSelection.getStartOffset();
       const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
       const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
       const isStartOfBlock = startOffset === 0;
@@ -165,12 +208,21 @@ const HoneEditor = () => {
           }
         }
 
-        setActiveHonePanel(true);
+        setSavedSelection(currentSelection);
         setHonePanelTopPosition(topPosition);
+        setActiveHonePanel(true);
+        console.log("savedSelection", savedSelection);
         return "handled";
       }
     } else if (command === "deactivate-hone-panel") {
       setActiveHonePanel(false);
+      console.log("savedSelection!!!!!", savedSelection);
+      if (savedSelection) {
+        const newEditorState = EditorState.forceSelection(editorState, savedSelection);
+        setEditorState(newEditorState);
+        editorRef.current?.focus();
+        console.log("savedSelection~~~", savedSelection);
+      }
       return "not-handled";
     }
     return "not-handled";
@@ -190,7 +242,7 @@ const HoneEditor = () => {
         />
       </div>
       <div>
-        <HonePanel isActive={activeHonePanel} topPosition={HonePanelTopPosition} />
+        <HonePanel ref={honePanelRef} isActive={activeHonePanel} topPosition={HonePanelTopPosition} />
       </div>
     </div>
   );
