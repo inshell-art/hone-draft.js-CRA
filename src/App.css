@@ -104,18 +104,20 @@ body {
   position: absolute;
   width: 780px;
   margin-top: var(--small);
+  background-color: white;
 }
 
 .hone-panel-title {
+  color: var(--ash);
   padding: var(--tiny);
   margin-bottom: var(--small);
-  background-color: white;
-
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .hone-panel-content {
-  background-color: white;
+  color: var(--Scheele-green);
+  max-height: 300px;
+  overflow: auto;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -124,7 +126,7 @@ body {
 }
 
 .facet-item.highlighted {
-  background-color: #fafafa;
+  background-color: var(--light-white);
 }
 
 /* For Articles list*/

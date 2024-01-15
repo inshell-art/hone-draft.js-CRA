@@ -65,38 +65,9 @@ const HoneEditor = () => {
   const { articleId } = useParams();
   const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
   const editorRef = useRef<HTMLDivElement>(null);
-  const honePanelRef = useRef<HTMLDivElement>(null);
   const [activeHonePanel, setActiveHonePanel] = useState(false);
-  const [HonePanelTopPosition, setHonePanelTopPosition] = useState(0);
+  const [honePanelTopPosition, setHonePanelTopPosition] = useState(0);
   const [savedSelection, setSavedSelection] = useState<SelectionState | null>(null);
-
-  // helper function to activiate HonePanel
-  const launchHonePanel = () => {
-    const currentSelection = editorState.getSelection();
-    const anchorKey = currentSelection.getAnchorKey();
-    const startOffset = currentSelection.getStartOffset();
-    const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
-    const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
-    const isStartOfBlock = startOffset === 0;
-    const isArticleTitle = anchorKey === firstBlockKey;
-
-    if (isBlockEmpty && isStartOfBlock && !isArticleTitle) {
-      const editorRoot = editorRef.current;
-      let topPosition = 0;
-
-      if (editorRoot) {
-        const node = editorRoot.querySelector(`[data-offset-key="${anchorKey}-0-0"]`);
-        if (node) {
-          const rect = node.getBoundingClientRect();
-          topPosition = rect.top + window.scrollY;
-        }
-      }
-
-      setSavedSelection(currentSelection);
-      setHonePanelTopPosition(topPosition);
-      setActiveHonePanel(true);
-    }
-  };
 
   // initialize the editor with the article
   useEffect(() => {
@@ -108,39 +79,6 @@ const HoneEditor = () => {
       setPrevPlainText(editorState.getCurrentContent().getPlainText());
     });
   }, [articleId]);
-
-  // Capture the Esc key when the focus is outside the editor to ensure that the HonePanel can be closed
-  useEffect(() => {
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        console.log("escape");
-        setActiveHonePanel(false);
-      }
-    };
-
-    document.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      document.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  // Close the HonePanel when the focus is outside the editor
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      if (activeHonePanel && honePanelRef.current && !honePanelRef.current.contains(target)) {
-        setActiveHonePanel(false);
-      }
-    }
-
-    // Bind the event listener
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      // Unbind the event listener on clean up
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [activeHonePanel, honePanelRef]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
@@ -178,54 +116,58 @@ const HoneEditor = () => {
     if (e.key === "Enter" && e.metaKey) {
       return "activate-hone-panel";
     }
-    if (e.key === "Escape") {
-      console.log("escape");
-      return "deactivate-hone-panel";
-    }
+
     return getDefaultKeyBinding(e); // Handle other keys normally
   };
 
-  // handle cmd + enter
+  // Handle cmd + enter to launch hone panel
   const handleKeyCommand = (command: string) => {
     if (command === "activate-hone-panel") {
-      const currentSelection = editorState.getSelection();
-      const anchorKey = currentSelection.getAnchorKey();
-      const startOffset = currentSelection.getStartOffset();
-      const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
-      const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
-      const isStartOfBlock = startOffset === 0;
-      const isArticleTitle = anchorKey === firstBlockKey;
-
-      if (isBlockEmpty && isStartOfBlock && !isArticleTitle) {
-        const editorRoot = editorRef.current;
-        let topPosition = 0;
-
-        if (editorRoot) {
-          const node = editorRoot.querySelector(`[data-offset-key="${anchorKey}-0-0"]`);
-          if (node) {
-            const rect = node.getBoundingClientRect();
-            topPosition = rect.top + window.scrollY;
-          }
-        }
-
-        setSavedSelection(currentSelection);
-        setHonePanelTopPosition(topPosition);
-        setActiveHonePanel(true);
-        console.log("savedSelection", savedSelection);
-        return "handled";
-      }
-    } else if (command === "deactivate-hone-panel") {
-      setActiveHonePanel(false);
-      console.log("savedSelection!!!!!", savedSelection);
-      if (savedSelection) {
-        const newEditorState = EditorState.forceSelection(editorState, savedSelection);
-        setEditorState(newEditorState);
-        editorRef.current?.focus();
-        console.log("savedSelection~~~", savedSelection);
-      }
-      return "not-handled";
+      launchHonePanel();
+      return "handled";
     }
     return "not-handled";
+  };
+  // helper function to launch hone panel
+  const launchHonePanel = () => {
+    const currentSelection = editorState.getSelection();
+    const anchorKey = currentSelection.getAnchorKey();
+    const startOffset = currentSelection.getStartOffset();
+    const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
+    const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
+    const isStartOfBlock = startOffset === 0;
+    const isArticleTitle = anchorKey === firstBlockKey;
+
+    if (isBlockEmpty && isStartOfBlock && !isArticleTitle) {
+      const editorRoot = editorRef.current;
+      let topPosition = 0;
+
+      if (editorRoot) {
+        const node = editorRoot.querySelector(`[data-offset-key="${anchorKey}-0-0"]`);
+        if (node) {
+          const rect = node.getBoundingClientRect();
+          topPosition = rect.top + window.scrollY;
+        }
+      }
+
+      setSavedSelection(currentSelection);
+      setHonePanelTopPosition(topPosition);
+      setActiveHonePanel(true);
+    }
+  };
+
+  // helper function to close hone panel
+  const closeHonePanel = () => {
+    if (savedSelection) {
+      const newEditorState = EditorState.forceSelection(editorState, savedSelection);
+      setEditorState(newEditorState);
+    }
+
+    setActiveHonePanel(false);
+
+    setTimeout(() => {
+      editorRef.current?.focus();
+    }, 0);
   };
 
   return (
@@ -242,7 +184,7 @@ const HoneEditor = () => {
         />
       </div>
       <div>
-        <HonePanel ref={honePanelRef} isActive={activeHonePanel} topPosition={HonePanelTopPosition} />
+        <HonePanel isActive={activeHonePanel} topPosition={honePanelTopPosition} onClose={closeHonePanel} />
       </div>
     </div>
   );

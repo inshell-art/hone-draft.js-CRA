@@ -18,4 +18,5 @@ export type Facet = {
 export type HonePanelProps = {
   isActive: Boolean;
   topPosition: number; // only vertical
+  onClose: () => void;
 };

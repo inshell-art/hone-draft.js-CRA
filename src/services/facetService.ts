@@ -13,7 +13,7 @@
 
 import { Article, Facet } from "../types/types";
 import { db } from "./indexedDBService";
-import { RawDraftContentBlock } from "draft-js";
+import { EditorState, RawDraftContentBlock, ContentBlock, genKey, ContentState } from "draft-js";
 import { FACET_TITLE_SYMBOL, NOT_FACET_SYMBOL } from "../utils/constants";
 import { is } from "immutable";
 
@@ -83,4 +83,44 @@ export const syncFacetsFromArticle = async (articleId: string) => {
   if (!article) return;
   const facets = extractFacetsFromArticle(article);
   await syncFacetsToDB(articleId, facets);
+};
+
+export const insertFacet = async (facetId: string): Promise<EditorState> => {
+  const facet = await db.facets.get(facetId);
+  if (!facet) {
+    throw new Error("Facet not found");
+  }
+
+  const articleId = facet.articleId;
+  const article: Article | undefined = await db.articles.get(articleId);
+  if (!article || !article.rawContent) {
+    throw new Error("Article or raw content not found");
+  }
+
+  // Create block for facet title
+  const titleBlock = new ContentBlock({
+    key: genKey(),
+    text: facet.title || "",
+    type: "header-one", // or any other suitable type
+  });
+
+  // Create blocks for facet contents
+  const contentBlocks = facet.contentsId.map(async (contentId) => {
+    const contentBlock = article?.rawContent?.blocks.find((block: RawDraftContentBlock) => block.key === contentId);
+    return new ContentBlock({
+      key: genKey(),
+      text: contentBlock?.text || "",
+      type: "unstyled", // or any other suitable type
+    });
+  });
+
+  // Resolve all content blocks
+  const resolvedContentBlocks = await Promise.all(contentBlocks);
+
+  // Assemble facet title and facet contents to editorState
+  const facetBlocks = [titleBlock, ...resolvedContentBlocks];
+  const contentState = ContentState.createFromBlockArray(facetBlocks);
+  const facetEditorState = EditorState.createWithContent(contentState);
+
+  return facetEditorState;
 };
