@@ -86,7 +86,7 @@ export const syncFacetsFromArticle = async (articleId: string) => {
 };
 // #endregion
 
-// Extract facets from indexedDB by articleId
+// Extract a facet from indexedDB by articleId
 export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => {
   const facet = await db.facets.get(facetId);
   if (!facet) {
@@ -124,3 +124,9 @@ export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => 
 
   return facetBlocks;
 };
+
+// refactor to be:
+// extract a facet:
+// extract all facet: by extract a facet
+// convert the two function returns in the application scenarios:
+// reprensentFacetAsSet in similarityService.tsx and handleFacetInsert in HoneEditor.tsx

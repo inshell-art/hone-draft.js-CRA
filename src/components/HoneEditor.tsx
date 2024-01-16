@@ -148,8 +148,14 @@ const HoneEditor = () => {
     const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
     const isStartOfBlock = startOffset === 0;
     const isArticleTitle = anchorKey === firstBlockKey;
+    // check if "any block is facet title" before the current block
+    const isAfterFacetTitle = editorState
+      .getCurrentContent()
+      .getBlockMap()
+      .takeUntil((block) => block?.getKey() === anchorKey)
+      .some((block) => block?.getType() === FACET_TITLE);
 
-    if (isBlockEmpty && isStartOfBlock && !isArticleTitle) {
+    if (isBlockEmpty && isStartOfBlock && !isArticleTitle && isAfterFacetTitle) {
       const editorRoot = editorRef.current;
       let topPosition = 0;
 
