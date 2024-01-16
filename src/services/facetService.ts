@@ -13,10 +13,11 @@
 
 import { Article, Facet } from "../types/types";
 import { db } from "./indexedDBService";
-import { EditorState, RawDraftContentBlock, ContentBlock, genKey, ContentState } from "draft-js";
-import { FACET_TITLE_SYMBOL, NOT_FACET_SYMBOL } from "../utils/constants";
+import { EditorState, RawDraftContentBlock, ContentBlock, genKey, ContentState, SelectionState } from "draft-js";
+import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET_SYMBOL } from "../utils/constants";
 import { is } from "immutable";
 
+// #region : sync article with articleId to facets in indexedDB
 const extractFacetsFromArticle = (article: Article): Facet[] => {
   const rawContent = article.rawContent;
   if (!rawContent) return [];
@@ -46,13 +47,13 @@ const extractFacetsFromArticle = (article: Article): Facet[] => {
       } else {
         if (isLastBlock) {
           if (currentFacet) {
-            currentFacet.contentsId.push(block.key);
+            currentFacet.contentsId?.push(block.key);
             facets.push(currentFacet);
             currentFacet = null;
           }
         } else {
           if (currentFacet) {
-            currentFacet.contentsId.push(block.key);
+            currentFacet.contentsId?.push(block.key);
           }
         }
       }
@@ -77,15 +78,16 @@ const syncFacetsToDB = async (articleId: string, newFacets: Facet[]) => {
   }
 };
 
-// sync article with articleId to facets in indexedDB
 export const syncFacetsFromArticle = async (articleId: string) => {
   const article = await db.articles.get(articleId);
   if (!article) return;
   const facets = extractFacetsFromArticle(article);
   await syncFacetsToDB(articleId, facets);
 };
+// #endregion
 
-export const insertFacet = async (facetId: string): Promise<EditorState> => {
+// Extract facets from indexedDB by articleId
+export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => {
   const facet = await db.facets.get(facetId);
   if (!facet) {
     throw new Error("Facet not found");
@@ -101,11 +103,11 @@ export const insertFacet = async (facetId: string): Promise<EditorState> => {
   const titleBlock = new ContentBlock({
     key: genKey(),
     text: facet.title || "",
-    type: "header-one", // or any other suitable type
+    type: FACET_TITLE, // or any other suitable type
   });
 
   // Create blocks for facet contents
-  const contentBlocks = facet.contentsId.map(async (contentId) => {
+  const contentBlocks = facet?.contentsId?.map(async (contentId) => {
     const contentBlock = article?.rawContent?.blocks.find((block: RawDraftContentBlock) => block.key === contentId);
     return new ContentBlock({
       key: genKey(),
@@ -115,12 +117,10 @@ export const insertFacet = async (facetId: string): Promise<EditorState> => {
   });
 
   // Resolve all content blocks
-  const resolvedContentBlocks = await Promise.all(contentBlocks);
+  const resolvedContentBlocks = await Promise.all(contentBlocks || []);
 
   // Assemble facet title and facet contents to editorState
   const facetBlocks = [titleBlock, ...resolvedContentBlocks];
-  const contentState = ContentState.createFromBlockArray(facetBlocks);
-  const facetEditorState = EditorState.createWithContent(contentState);
 
-  return facetEditorState;
+  return facetBlocks;
 };

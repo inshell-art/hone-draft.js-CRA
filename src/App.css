@@ -123,6 +123,7 @@ body {
 
 .facet-item {
   padding: var(--tiny);
+  cursor: pointer;
 }
 
 .facet-item.highlighted {
@@ -147,20 +148,17 @@ body {
 }
 
 /* For FACETs */
-
 .FACETs a {
   color: var(--Scheele-green);
   text-decoration: none;
 }
 
 .honed-facet {
-  font-size: var(--medium);
-  font-weight: var(--middle);
+  font-weight: var(--heavy);
   padding-top: var(--medium);
 }
 
 .honing-facet {
-  font-size: var(--small);
   font-weight: var(--light);
 }
 

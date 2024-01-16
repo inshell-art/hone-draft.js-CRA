@@ -33,11 +33,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 
-import { Editor, ContentBlock, EditorState, convertToRaw, convertFromRaw, getDefaultKeyBinding, SelectionState } from "draft-js";
+import {
+  Editor,
+  ContentBlock,
+  EditorState,
+  convertToRaw,
+  convertFromRaw,
+  getDefaultKeyBinding,
+  SelectionState,
+  ContentState,
+  Modifier,
+  DraftHandleValue,
+} from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle } from "../services/indexedDBService";
-import { syncFacetsFromArticle } from "../services/facetService";
+import { extractFacet, syncFacetsFromArticle } from "../services/facetService";
 import { set } from "lodash";
 import HonePanel from "./HonePanel";
 import { is } from "immutable";
@@ -170,6 +181,48 @@ const HoneEditor = () => {
     }, 0);
   };
 
+  const handleFacetInsert = async (facetId: string) => {
+    const currentContentState = editorState.getCurrentContent();
+    const currentBlockArray = currentContentState.getBlocksAsArray();
+
+    const startKey = savedSelection?.getStartKey();
+    const insertBlockIndex = currentBlockArray.findIndex((block) => block.getKey() === startKey);
+
+    const facetBlockArray = await extractFacet(facetId);
+
+    const updateBlcokArray = [
+      ...currentBlockArray.slice(0, insertBlockIndex),
+      ...facetBlockArray,
+      ...currentBlockArray.slice(insertBlockIndex),
+    ];
+
+    const newContentState = ContentState.createFromBlockArray(updateBlcokArray);
+    const newEditorState = EditorState.push(editorState, newContentState, "insert-fragment");
+    const updatedEditorState = EditorState.forceSelection(newEditorState, savedSelection!);
+
+    setEditorState(updatedEditorState);
+
+    setActiveHonePanel(false);
+  };
+
+  const handlePastedText = (text: string, _html: string | undefined, editorState: EditorState): DraftHandleValue => {
+    const currentContent = editorState.getCurrentContent();
+    const currentSelection = editorState.getSelection();
+
+    // Create a new content state with the pasted plain text
+    const newContentState = Modifier.replaceText(
+      currentContent,
+      currentSelection,
+      text // text is the plain text version of the pasted content
+    );
+
+    // Update the editor state
+    const newEditorState = EditorState.push(editorState, newContentState, "insert-characters");
+    setEditorState(newEditorState);
+
+    return "handled"; // Return 'handled' to indicate we've taken care of the paste
+  };
+
   return (
     <div>
       <div ref={editorRef} className="article">
@@ -181,10 +234,17 @@ const HoneEditor = () => {
           keyBindingFn={keyBindingFn}
           handleKeyCommand={handleKeyCommand}
           readOnly={activeHonePanel}
+          spellCheck={true}
+          handlePastedText={handlePastedText}
         />
       </div>
       <div>
-        <HonePanel isActive={activeHonePanel} topPosition={honePanelTopPosition} onClose={closeHonePanel} />
+        <HonePanel
+          isActive={activeHonePanel}
+          topPosition={honePanelTopPosition}
+          onSelectFacet={handleFacetInsert}
+          onClose={closeHonePanel}
+        />
       </div>
     </div>
   );

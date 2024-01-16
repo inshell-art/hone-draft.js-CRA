@@ -12,11 +12,12 @@ export type Facet = {
   titleId: string;
   facetId: string;
   title?: string;
-  contentsId: string[];
+  contentsId?: string[];
 };
 
 export type HonePanelProps = {
   isActive: Boolean;
   topPosition: number; // only vertical
+  onSelectFacet: (facetId: string) => void;
   onClose: () => void;
 };

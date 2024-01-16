@@ -34,7 +34,6 @@ export const fetchAllArticles = async () => {
   return articles;
 };
 
-// fetch all facets from indexedDB
 export const fetchAllFacets = async () => {
   const facets = await db.facets.toArray();
   return facets;

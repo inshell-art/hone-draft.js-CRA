@@ -3,8 +3,9 @@ import { fetchAllFacets } from "../services/indexedDBService";
 import { Facet } from "../types/types";
 import React, { useState, useEffect } from "react";
 import { on } from "events";
+import { is } from "immutable";
 
-const HonePanel = ({ isActive, topPosition, onClose }: HonePanelProps) => {
+const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose }: HonePanelProps) => {
   const [facets, setFacets] = useState<Facet[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -40,8 +41,14 @@ const HonePanel = ({ isActive, topPosition, onClose }: HonePanelProps) => {
 
   // highlight the facet when press up or down
   useEffect(() => {
+    let isKeyHandled = false;
+
+    const activeKeyHandler = () => {
+      isKeyHandled = true;
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isActive) {
+      if (isActive && isKeyHandled) {
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           e.preventDefault(); // prevent the scroll of the page
           setHighlightedFacetIndex((prevIndex) => {
@@ -62,16 +69,20 @@ const HonePanel = ({ isActive, topPosition, onClose }: HonePanelProps) => {
             return newIndex;
           });
         } else if (e.key === "Enter") {
-          // insert the facet
+          onSelectFacet(facets[highlightedFacetIndex].facetId);
         }
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
+
+    if (isActive) {
+      setTimeout(activeKeyHandler, 100);
+      window.addEventListener("keydown", handleKeyDown);
+    }
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isActive, highlightedFacetIndex, facets.length]);
+  }, [isActive, highlightedFacetIndex, facets.length, onSelectFacet, facets]);
 
   if (!isActive) return null;
 
@@ -93,6 +104,7 @@ const HonePanel = ({ isActive, topPosition, onClose }: HonePanelProps) => {
             key={index}
             className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
             onMouseOver={() => handleMouseOver(index)}
+            onClick={() => onSelectFacet(facet.facetId)}
           >
             {facet.title}
           </div>
