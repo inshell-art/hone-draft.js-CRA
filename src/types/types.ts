@@ -5,6 +5,12 @@ export type Article = {
   updateAt?: string;
   title?: string;
   rawContent?: RawDraftContentState;
+  facetsUpdateAt?: FacetUpdateAt[];
+};
+
+export type FacetUpdateAt = {
+  facetId: string;
+  updateAt: string;
 };
 
 export type Facet = {
@@ -16,6 +22,10 @@ export type Facet = {
   updateAt?: string;
   honingFacetsId?: string[];
   honedFacetsId?: string[];
+};
+
+export type FacetMap = {
+  [key: string]: Facet;
 };
 
 export type HonePanelProps = {

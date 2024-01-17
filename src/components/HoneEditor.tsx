@@ -45,7 +45,7 @@ import {
   Modifier,
   DraftHandleValue,
 } from "draft-js";
-import { getCurrentDate } from "../utils/utils";
+import { constructFacetMap, getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle } from "../services/indexedDBService";
 import { extractFacet, syncFacetsFromArticle } from "../services/facetService";
@@ -72,6 +72,10 @@ const initializeArticle = async (articleId: string): Promise<EditorState> => {
   }
 };
 
+const hasPlainTextChange = (currentText: string, prevText: string) => {
+  return currentText !== prevText;
+};
+
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const { articleId } = useParams();
@@ -94,6 +98,12 @@ const HoneEditor = () => {
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
+
+    // check each facet to see if it is changed, if changed, update the updateAt in FacetUpdateAt
+    const currentContentState = newEditorState.getCurrentContent();
+    if (articleId) {
+      const facetMap = constructFacetMap(currentContentState, articleId);
+    }
 
     // save article
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
