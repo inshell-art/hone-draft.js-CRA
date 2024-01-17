@@ -53,8 +53,9 @@ import { set } from "lodash";
 import HonePanel from "./HonePanel";
 import { is } from "immutable";
 import e from "express";
+import { Article } from "../types/types";
 
-const assembleArticle = (articleId: string, editorState: EditorState) => {
+const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
   const title = editorState.getCurrentContent().getFirstBlock().getText();
   const rawContent = convertToRaw(editorState.getCurrentContent());
@@ -153,7 +154,7 @@ const HoneEditor = () => {
       .getCurrentContent()
       .getBlockMap()
       .takeUntil((block) => block?.getKey() === anchorKey)
-      .some((block) => block?.getType() === FACET_TITLE);
+      .some((block) => (block ? block.getText().startsWith(FACET_TITLE_SYMBOL) : false));
 
     if (isBlockEmpty && isStartOfBlock && !isArticleTitle && isAfterFacetTitle) {
       const editorRoot = editorRef.current;

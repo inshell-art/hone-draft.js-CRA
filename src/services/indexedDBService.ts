@@ -13,6 +13,11 @@ class HoneDatabase extends Dexie {
       facets: "facetId, articleId, title, contentsId",
     });
 
+    this.version(2).stores({
+      articles: "articleId, updateAt, title",
+      facets: "facetId, articleId, title, contentsId, updateAt, honingFacetsId, honedFacetsId",
+    });
+
     this.articles = this.table("articles");
     this.facets = this.table("facets");
   }

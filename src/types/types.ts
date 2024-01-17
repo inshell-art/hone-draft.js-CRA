@@ -13,6 +13,9 @@ export type Facet = {
   facetId: string;
   title?: string;
   contentsId?: string[];
+  updateAt?: string;
+  honingFacetsId?: string[];
+  honedFacetsId?: string[];
 };
 
 export type HonePanelProps = {
