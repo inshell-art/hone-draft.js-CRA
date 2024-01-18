@@ -32,6 +32,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
+import { extractFacetsFromArticle } from "../services/facetService";
 
 import {
   Editor,
@@ -45,15 +46,15 @@ import {
   Modifier,
   DraftHandleValue,
 } from "draft-js";
-import { constructFacetMap, getCurrentDate } from "../utils/utils";
+import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
-import { submitArticle, fetchArticle } from "../services/indexedDBService";
+import { submitArticle, fetchArticle, submitFacets } from "../services/indexedDBService";
 import { extractFacet, syncFacetsFromArticle } from "../services/facetService";
 import { set } from "lodash";
 import HonePanel from "./HonePanel";
 import { is } from "immutable";
 import e from "express";
-import { Article } from "../types/types";
+import { Article, Facet } from "../types/types";
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
@@ -72,14 +73,11 @@ const initializeArticle = async (articleId: string): Promise<EditorState> => {
   }
 };
 
-const hasPlainTextChange = (currentText: string, prevText: string) => {
-  return currentText !== prevText;
-};
-
 const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const { articleId } = useParams();
-  const [prevPlainText, setPrevPlainText] = useState(editorState.getCurrentContent().getPlainText());
+  const [prevArticleText, setPrevArticleText] = useState(editorState.getCurrentContent().getPlainText());
+  const [prevFacetsText, setPrevFacetsText] = useState<Map<string, string>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeHonePanel, setActiveHonePanel] = useState(false);
   const [honePanelTopPosition, setHonePanelTopPosition] = useState(0);
@@ -92,25 +90,21 @@ const HoneEditor = () => {
     const editorStatePromise = initializeArticle(articleId);
     editorStatePromise.then((editorState) => {
       setEditorState(editorState);
-      setPrevPlainText(editorState.getCurrentContent().getPlainText());
+      setPrevArticleText(editorState.getCurrentContent().getPlainText());
     });
   }, [articleId]);
 
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
 
-    // check each facet to see if it is changed, if changed, update the updateAt in FacetUpdateAt
-    const currentContentState = newEditorState.getCurrentContent();
-    if (articleId) {
-      const facetMap = constructFacetMap(currentContentState, articleId);
-    }
-
     // save article
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
-    if (currentPlainText !== prevPlainText && articleId) {
+    if (currentPlainText !== prevArticleText && articleId) {
       const article = assembleArticle(articleId, newEditorState);
       submitArticle(article);
-      setPrevPlainText(currentPlainText);
+      setPrevArticleText(currentPlainText);
+
+      submitFacets(articleId, newEditorState, prevFacetsText, setPrevArticleText); // submit facets when article is updated
 
       syncFacetsFromArticle(articleId); // sync facets store from article store when article is updated
     }
@@ -126,11 +120,8 @@ const HoneEditor = () => {
       return ARTICLE_TITLE;
     } else if (text.startsWith(FACET_TITLE_SYMBOL)) {
       return FACET_TITLE;
-    } else if (text.startsWith(NOT_FACET_SYMBOL)) {
-      return NOT_FACET;
     }
-
-    return "block-padding";
+    return "unstyled";
   };
 
   // when cmd + enter is pressed

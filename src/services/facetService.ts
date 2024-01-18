@@ -15,7 +15,7 @@ import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET_SYMBOL } from
 import { is } from "immutable";
 
 // #region : sync article with articleId to facets in indexedDB
-const extractFacetsFromArticle = (article: Article): Facet[] => {
+export const extractFacetsFromArticle = (article: Article): Facet[] => {
   const rawContent = article.rawContent;
   if (!rawContent) return [];
 
@@ -83,7 +83,7 @@ export const syncFacetsFromArticle = async (articleId: string) => {
 };
 // #endregion
 
-// Extract a facet from indexedDB by articleId
+// Extract a facet as content blocks from indexedDB by articleId
 export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => {
   const facet = await db.facets.get(facetId);
   if (!facet) {
@@ -121,9 +121,3 @@ export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => 
 
   return facetBlocks;
 };
-
-// refactor to be:
-// extract a facet:
-// extract all facet: by extract a facet
-// convert the two function returns in the application scenarios:
-// reprensentFacetAsSet in similarityService.tsx and handleFacetInsert in HoneEditor.tsx
