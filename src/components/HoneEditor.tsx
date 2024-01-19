@@ -32,8 +32,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { extractFacetsFromArticle } from "../services/facetService";
-
 import {
   Editor,
   ContentBlock,
@@ -48,12 +46,8 @@ import {
 } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
-import { submitArticle, fetchArticle, submitFacets } from "../services/indexedDBService";
-import { extractFacet, syncFacetsFromArticle } from "../services/facetService";
-import { set } from "lodash";
+import { submitArticle, fetchArticle, submitFacets, extractFacet } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
-import { is } from "immutable";
-import e from "express";
 import { Article, Facet } from "../types/types";
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
@@ -94,19 +88,25 @@ const HoneEditor = () => {
     });
   }, [articleId]);
 
+  // save the article and facets if the content in is changed respectively
   const onChange = (newEditorState: EditorState) => {
     setEditorState(newEditorState);
 
-    // save article
     const currentPlainText = newEditorState.getCurrentContent().getPlainText();
     if (currentPlainText !== prevArticleText && articleId) {
       const article = assembleArticle(articleId, newEditorState);
-      submitArticle(article);
+      try {
+        submitArticle(article);
+      } catch (error) {
+        console.error("Error while submitArticle", error);
+      }
       setPrevArticleText(currentPlainText);
 
-      submitFacets(articleId, newEditorState, prevFacetsText, setPrevArticleText); // submit facets when article is updated
-
-      syncFacetsFromArticle(articleId); // sync facets store from article store when article is updated
+      try {
+        submitFacets(articleId, newEditorState, prevFacetsText, setPrevFacetsText);
+      } catch (error) {
+        console.error("Error while submitFacets", error);
+      }
     }
   };
 
@@ -196,7 +196,13 @@ const HoneEditor = () => {
     const startKey = savedSelection?.getStartKey();
     const insertBlockIndex = currentBlockArray.findIndex((block) => block.getKey() === startKey);
 
-    const facetBlockArray = await extractFacet(facetId);
+    let facetBlockArray: ContentBlock[] | undefined;
+    try {
+      facetBlockArray = await extractFacet(facetId);
+    } catch (error) {
+      console.error(error);
+    }
+    if (!facetBlockArray) return;
 
     const updateBlcokArray = [
       ...currentBlockArray.slice(0, insertBlockIndex),

@@ -9,6 +9,7 @@ export type Article = {
 
 export type Facet = {
   facetId: string;
+  articleId: string;
   updateAt: string;
   title: string;
   content?: string;

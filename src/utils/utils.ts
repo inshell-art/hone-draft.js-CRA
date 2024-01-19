@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import { ContentBlock } from "draft-js";
-import { FacetMap, Facet } from "../types/types";
+import { Facet } from "../types/types";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET_SYMBOL } from "./constants";
 
 export const getCurrentDate = () => {

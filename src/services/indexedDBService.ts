@@ -1,6 +1,6 @@
 import Dexie from "dexie";
 import { Article, Facet } from "../types/types";
-import { EditorState } from "draft-js";
+import { ContentBlock, EditorState, genKey } from "draft-js";
 import { FACET_TITLE_SYMBOL } from "../utils/constants";
 import { getCurrentDate } from "../utils/utils";
 import React from "react";
@@ -19,7 +19,7 @@ class HoneDatabase extends Dexie {
 
     this.version(2).stores({
       articles: "articleId, updateAt, title",
-      facets: "facetId, articleId, title, contentsId, updateAt, honingFacetsId, honedFacetsId",
+      facets: "facetId, articleId, title, updateAt, honingFacetsId, honedFacetsId",
     });
 
     this.articles = this.table("articles");
@@ -48,7 +48,33 @@ export const fetchAllFacets = async () => {
   return facets;
 };
 
-export const assembleFacets = async (
+// #region functions to submit facets to database
+const fetchFadetUpdateAt = async (facetId: string) => {
+  const facet = await db.facets.get(facetId);
+  return facet?.updateAt;
+};
+
+const updateAtIfFacetIsChanged = (
+  facetId: string,
+  currentFacet: Facet,
+  prevFacetsText: Map<string, string>,
+  setPrevFacetsText: React.Dispatch<React.SetStateAction<Map<string, string>>>
+) => {
+  const facetPlainText = currentFacet.title.trim() + "\n" + currentFacet?.content?.trim();
+  const prevText = prevFacetsText.get(facetId);
+
+  if (prevText !== facetPlainText) {
+    currentFacet.updateAt = getCurrentDate();
+    setPrevFacetsText((prevMap) => {
+      const newMap = new Map(prevMap);
+      newMap.set(facetId, facetPlainText);
+      return newMap;
+    });
+    return currentFacet;
+  }
+};
+
+const assembleFacets = async (
   editorState: EditorState,
   articleId: string,
   prevFacetsText: Map<string, string>,
@@ -65,7 +91,7 @@ export const assembleFacets = async (
 
     if (isFacetTitle) {
       if (currentFacet) {
-        checkAndUpdateFacet(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
+        updateAtIfFacetIsChanged(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
         facets.push(currentFacet);
         currentFacet = null;
       }
@@ -73,15 +99,15 @@ export const assembleFacets = async (
       const existingDate = await fetchFadetUpdateAt(facetId);
       currentFacet = {
         facetId,
+        articleId,
         title: block.getText(),
         content: "",
         updateAt: existingDate || getCurrentDate(),
       };
-      facets.push(currentFacet);
     } else if (currentFacet) {
       currentFacet.content += block.getText() + "\n";
       if (isLastBlock) {
-        checkAndUpdateFacet(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
+        updateAtIfFacetIsChanged(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
         facets.push(currentFacet);
         currentFacet = null;
       }
@@ -91,20 +117,7 @@ export const assembleFacets = async (
   return facets;
 };
 
-// submit facets to database
-export const submitFacets = async (
-  articleId: string,
-  editorState: EditorState,
-  prevFacetsText: Map<string, string>,
-  setPrevFacetsText: React.Dispatch<React.SetStateAction<Map<string, string>>>
-) => {
-  const article = await db.articles.get(articleId);
-  if (!article) return;
-  const facets = await assembleFacets(editorState, articleId, prevFacetsText, setPrevFacetsText);
-  await syncFacetsToDB(articleId, facets);
-};
-
-const syncFacetsToDB = async (articleId: string, newFacets: Facet[]) => {
+const updateFacetsToDb = async (articleId: string, newFacets: Facet[]) => {
   const existingFacets = await db.facets.where("articleId").equals(articleId).toArray();
   const newFacetsId = newFacets.map((facet) => facet.facetId);
 
@@ -115,31 +128,49 @@ const syncFacetsToDB = async (articleId: string, newFacets: Facet[]) => {
   }
 
   for (const facet of newFacets) {
-    await db.facets.put(facet);
+    const existingFacet = existingFacets.find((f) => f.facetId === facet.facetId);
+    if (!existingFacet || JSON.stringify(existingFacet) !== JSON.stringify(facet)) {
+      await db.facets.put(facet);
+    }
   }
 };
 
-const fetchFadetUpdateAt = async (facetId: string) => {
-  const facet = await db.facets.get(facetId);
-  return facet?.updateAt;
-};
-
-const checkAndUpdateFacet = (
-  facetId: string,
-  currentFacet: Facet,
+export const submitFacets = async (
+  articleId: string,
+  editorState: EditorState,
   prevFacetsText: Map<string, string>,
   setPrevFacetsText: React.Dispatch<React.SetStateAction<Map<string, string>>>
 ) => {
-  const facetPlainText = currentFacet.title + "\n" + currentFacet?.content?.trim();
-  const prevText = prevFacetsText.get(facetId);
+  const article = await db.articles.get(articleId);
+  if (!article) return;
+  const facets = await assembleFacets(editorState, articleId, prevFacetsText, setPrevFacetsText);
+  await updateFacetsToDb(articleId, facets);
+};
+// #endregion
 
-  if (prevText !== facetPlainText) {
-    currentFacet.updateAt = getCurrentDate();
-    setPrevFacetsText((prevMap) => {
-      const newMap = new Map(prevMap);
-      newMap.set(facetId, facetPlainText);
-      return newMap;
-    });
-    return currentFacet;
+// Extract a facet as content blocks from indexedDB by facetId
+export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => {
+  const facet = await db.facets.get(facetId);
+  if (!facet) {
+    throw new Error("Error: retrieve facet from indexedDB failed.");
   }
+
+  const titleBlock = new ContentBlock({
+    key: genKey(),
+    text: facet.title || "",
+    type: "unstyled",
+  });
+
+  const contentBlocks =
+    facet?.content?.split("\n").map((text) => {
+      return new ContentBlock({
+        key: genKey(),
+        text: text,
+        type: "unstyled",
+      });
+    }) || [];
+
+  const facetBlocks = [titleBlock, ...contentBlocks];
+
+  return facetBlocks;
 };

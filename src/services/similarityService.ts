@@ -1,6 +1,11 @@
+/**
+ * This file contains functions that calculate the similarity between facets
+ *
+ * @facets
+ */
+
 import { db } from "./indexedDBService";
 import { Facet } from "../types/types";
-import { extractFacet } from "./facetService";
 
 const jaccardSimilarity = (a: string, b: string) => {
   const aSet = new Set(a.split(" "));
