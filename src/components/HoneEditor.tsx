@@ -71,7 +71,6 @@ const HoneEditor = () => {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const { articleId } = useParams();
   const [prevArticleText, setPrevArticleText] = useState(editorState.getCurrentContent().getPlainText());
-  const [prevFacetsText, setPrevFacetsText] = useState<Map<string, string>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeHonePanel, setActiveHonePanel] = useState(false);
   const [honePanelTopPosition, setHonePanelTopPosition] = useState(0);
@@ -103,7 +102,7 @@ const HoneEditor = () => {
       setPrevArticleText(currentPlainText);
 
       try {
-        submitFacets(articleId, newEditorState, prevFacetsText, setPrevFacetsText);
+        submitFacets(articleId, newEditorState);
       } catch (error) {
         console.error("Error while submitFacets", error);
       }

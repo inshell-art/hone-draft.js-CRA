@@ -23,7 +23,6 @@ const FACETs = () => {
         {facets.map((facet) => (
           <div key={facet.facetId} className="honed-facet">
             <Link to={`/article/${facet.articleId}`}>{facet.title}</Link>
-            <span className="facet-updateAt"> - {facet.updateAt || "undefined"}</span>
             <div className="honing-facet">
               <Link to={`/article/${facet.articleId}`}>[0.712] {facet.title}</Link>
             </div>

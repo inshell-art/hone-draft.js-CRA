@@ -14,13 +14,8 @@ class HoneDatabase extends Dexie {
     super("HoneDatabase");
     this.version(1).stores({
       articles: "articleId, updateAt, title",
-      facets: "facetId, articleId, title, contentsId",
+      facets: "facetId, articleId, title, honingFacetsId, honedFacetsId",
     });
-
-    this.version(2).stores({
-      articles: "articleId, updateAt, title",
-      facets: "facetId, articleId, title, updateAt, honingFacetsId, honedFacetsId",
-    }); // TODO: omitting contentsId but didn't upgrade the version, will integrate it later
 
     this.articles = this.table("articles");
     this.facets = this.table("facets");
@@ -49,57 +44,18 @@ export const fetchAllFacets = async () => {
 };
 
 // #region functions to submit facets to database
-const fetchFadetUpdateAt = async (facetId: string) => {
-  const facet = await db.facets.get(facetId);
-  return facet?.updateAt;
-};
-
-const updateAtIfFacetIsChanged = (
-  facetId: string,
-  currentFacet: Facet,
-  prevFacetsText: Map<string, string>,
-  setPrevFacetsText: React.Dispatch<React.SetStateAction<Map<string, string>>>
-) => {
-  const facetPlainText = currentFacet.title.trim() + "\n" + currentFacet?.content?.trim();
-  const prevText = prevFacetsText.get(facetId);
-
-  if (prevText !== facetPlainText) {
-    currentFacet.updateAt = getCurrentDate();
-    console.log("updateAt is updated:", facetPlainText, currentFacet.updateAt);
-    setPrevFacetsText((prevMap) => {
-      const newMap = new Map(prevMap);
-      newMap.set(facetId, facetPlainText);
-      return newMap;
-    });
-    return currentFacet;
-  }
-};
-
-const assembleFacets = async (
-  editorState: EditorState,
-  articleId: string,
-  prevFacetsText: Map<string, string>,
-  setPrevFacetsText: React.Dispatch<React.SetStateAction<Map<string, string>>>
-): Promise<Facet[]> => {
+const assembleFacets = async (editorState: EditorState, articleId: string): Promise<Facet[]> => {
   const contentBlocks = editorState.getCurrentContent().getBlocksAsArray();
   const facets: Facet[] = [];
   let currentFacet: Facet | null = null;
 
-  let index = 0;
   for (const block of contentBlocks) {
     const isFacetTitle = block.getText().startsWith(FACET_TITLE_SYMBOL);
     const isLastBlock = block === contentBlocks[contentBlocks.length - 1];
     const facetId = `${articleId}-${block.getKey()}`;
-    const existingDate = await fetchFadetUpdateAt(facetId);
-    console.log(`Block ${index}`);
-    index++;
-    console.log("currentFacet:", currentFacet);
-    console.log(block.getText(), "existingDate:", existingDate);
 
     if (isFacetTitle) {
       if (currentFacet) {
-        updateAtIfFacetIsChanged(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
-        console.log("AAA", currentFacet.title, currentFacet.updateAt);
         facets.push(currentFacet);
         currentFacet = null;
       }
@@ -109,14 +65,10 @@ const assembleFacets = async (
         articleId,
         title: block.getText(),
         content: "",
-        updateAt: existingDate || getCurrentDate(),
       };
-      console.log("BBB", currentFacet.title, currentFacet.updateAt);
     } else if (currentFacet) {
       currentFacet.content += block.getText() + "\n";
       if (isLastBlock) {
-        updateAtIfFacetIsChanged(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
-        console.log("CCC", currentFacet.title, currentFacet.updateAt);
         facets.push(currentFacet);
         currentFacet = null;
       }
@@ -144,15 +96,10 @@ const updateFacetsToDb = async (articleId: string, newFacets: Facet[]) => {
   }
 };
 
-export const submitFacets = async (
-  articleId: string,
-  editorState: EditorState,
-  prevFacetsText: Map<string, string>,
-  setPrevFacetsText: React.Dispatch<React.SetStateAction<Map<string, string>>>
-) => {
+export const submitFacets = async (articleId: string, editorState: EditorState) => {
   const article = await db.articles.get(articleId);
   if (!article) return;
-  const facets = await assembleFacets(editorState, articleId, prevFacetsText, setPrevFacetsText);
+  const facets = await assembleFacets(editorState, articleId);
   await updateFacetsToDb(articleId, facets);
 };
 // #endregion
