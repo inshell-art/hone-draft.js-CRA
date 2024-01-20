@@ -12,8 +12,16 @@ export type Facet = {
   articleId: string;
   title: string;
   content?: string;
-  honingFacetsId?: string[];
-  honedFacetsId?: string[];
+};
+
+export type FacetHonedBy = {
+  facetId: string;
+  honedBy: HonedBy[];
+};
+
+type HonedBy = {
+  id: string;
+  similarity: number;
 };
 
 export type HonePanelProps = {

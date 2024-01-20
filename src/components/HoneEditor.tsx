@@ -45,10 +45,10 @@ import {
   DraftHandleValue,
 } from "draft-js";
 import { getCurrentDate } from "../utils/utils";
-import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL, NOT_FACET, NOT_FACET_SYMBOL } from "../utils/constants";
+import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
 import { submitArticle, fetchArticle, submitFacets, extractFacet } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
-import { Article, Facet } from "../types/types";
+import { Article } from "../types/types";
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
