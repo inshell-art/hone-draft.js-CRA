@@ -20,7 +20,7 @@ class HoneDatabase extends Dexie {
     this.version(2).stores({
       articles: "articleId, updateAt, title",
       facets: "facetId, articleId, title, updateAt, honingFacetsId, honedFacetsId",
-    });
+    }); // TODO: omitting contentsId but didn't upgrade the version, will integrate it later
 
     this.articles = this.table("articles");
     this.facets = this.table("facets");
@@ -65,6 +65,7 @@ const updateAtIfFacetIsChanged = (
 
   if (prevText !== facetPlainText) {
     currentFacet.updateAt = getCurrentDate();
+    console.log("updateAt is updated:", facetPlainText, currentFacet.updateAt);
     setPrevFacetsText((prevMap) => {
       const newMap = new Map(prevMap);
       newMap.set(facetId, facetPlainText);
@@ -84,19 +85,25 @@ const assembleFacets = async (
   const facets: Facet[] = [];
   let currentFacet: Facet | null = null;
 
+  let index = 0;
   for (const block of contentBlocks) {
     const isFacetTitle = block.getText().startsWith(FACET_TITLE_SYMBOL);
     const isLastBlock = block === contentBlocks[contentBlocks.length - 1];
     const facetId = `${articleId}-${block.getKey()}`;
+    const existingDate = await fetchFadetUpdateAt(facetId);
+    console.log(`Block ${index}`);
+    index++;
+    console.log("currentFacet:", currentFacet);
+    console.log(block.getText(), "existingDate:", existingDate);
 
     if (isFacetTitle) {
       if (currentFacet) {
         updateAtIfFacetIsChanged(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
+        console.log("AAA", currentFacet.title, currentFacet.updateAt);
         facets.push(currentFacet);
         currentFacet = null;
       }
 
-      const existingDate = await fetchFadetUpdateAt(facetId);
       currentFacet = {
         facetId,
         articleId,
@@ -104,10 +111,12 @@ const assembleFacets = async (
         content: "",
         updateAt: existingDate || getCurrentDate(),
       };
+      console.log("BBB", currentFacet.title, currentFacet.updateAt);
     } else if (currentFacet) {
       currentFacet.content += block.getText() + "\n";
       if (isLastBlock) {
         updateAtIfFacetIsChanged(facetId, currentFacet, prevFacetsText, setPrevFacetsText);
+        console.log("CCC", currentFacet.title, currentFacet.updateAt);
         facets.push(currentFacet);
         currentFacet = null;
       }

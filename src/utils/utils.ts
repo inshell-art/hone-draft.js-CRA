@@ -10,9 +10,12 @@ export const getCurrentDate = () => {
   const month = now.getMonth() + 1;
   const date = now.getDate();
   // and time
-  const time = now.getTime();
 
-  return `${year}-${month}-${date}-${time}`;
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const second = now.getSeconds();
+
+  return `${year}-${month}-${date}-${hour}-${minute}-${second}`;
 };
 
 export const convertFacetBlocksToPlainText = (facetBlocks: ContentBlock[]): string => {

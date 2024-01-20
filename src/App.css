@@ -158,6 +158,12 @@ body {
   padding-top: var(--medium);
 }
 
+.facet-updateAt {
+  font-size: var(--small);
+  font-weight: var(--light);
+  color: var(--ash);
+}
+
 .honing-facet {
   font-weight: var(--light);
 }
