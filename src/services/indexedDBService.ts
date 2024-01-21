@@ -1,24 +1,25 @@
 import Dexie from "dexie";
-import { Article, Facet } from "../types/types";
+import { Article, Facet, FacetHonedBy } from "../types/types";
 import { ContentBlock, EditorState, genKey } from "draft-js";
 import { FACET_TITLE_SYMBOL } from "../utils/constants";
-import { getCurrentDate } from "../utils/utils";
-import React from "react";
 
 // Initialize database
 class HoneDatabase extends Dexie {
   articles: Dexie.Table<Article, string>;
   facets: Dexie.Table<Facet, string>;
+  facetsHonedBy: Dexie.Table<FacetHonedBy, string>;
 
   constructor() {
     super("HoneDatabase");
     this.version(1).stores({
       articles: "articleId, updateAt, title",
-      facets: "facetId, articleId, title, honingFacetsId, honedFacetsId",
+      facets: "facetId, articleId, title",
+      facetsHonedBy: "subjectId, objectId",
     });
 
     this.articles = this.table("articles");
     this.facets = this.table("facets");
+    this.facetsHonedBy = this.table("facetsHonedBy");
   }
 }
 
