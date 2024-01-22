@@ -17,7 +17,7 @@ export type Facet = {
 export type FacetHonedBy = {
   subjectId: string;
   objectId: string;
-  similarity?: number;
+  similarity: number;
 };
 
 export type HonePanelProps = {
@@ -25,4 +25,5 @@ export type HonePanelProps = {
   topPosition: number; // only vertical
   onSelectFacet: (facetId: string) => void;
   onClose: () => void;
+  currentFacetText: string;
 };

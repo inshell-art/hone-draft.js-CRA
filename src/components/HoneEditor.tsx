@@ -49,6 +49,8 @@ import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constan
 import { submitArticle, fetchArticle, submitFacets, extractFacet } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
+import { is } from "immutable";
+import { set } from "lodash";
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
@@ -73,8 +75,9 @@ const HoneEditor = () => {
   const [prevArticleText, setPrevArticleText] = useState(editorState.getCurrentContent().getPlainText());
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeHonePanel, setActiveHonePanel] = useState(false);
-  const [honePanelTopPosition, setHonePanelTopPosition] = useState(0);
+  const [honePanelTopPosition, setHonePanelTopPosition] = useState<number | null>(null);
   const [savedSelection, setSavedSelection] = useState<SelectionState | null>(null);
+  const [currentFacetText, setCurrentFacetText] = useState<string | null>(null);
 
   // initialize the editor with the article
   useEffect(() => {
@@ -140,23 +143,56 @@ const HoneEditor = () => {
     }
     return "not-handled";
   };
+  // helper fn to get current facet text
+  const getCurrentFacetText = (anchorKey: string): string => {
+    const blockMap = editorState.getCurrentContent().getBlockMap();
+
+    let currentFacetTitleKey = "";
+    let blocksBeforeAnchor = blockMap
+      .takeUntil((_, k) => k === anchorKey)
+      .reverse()
+      .entrySeq()
+      .toArray();
+
+    for (let [key, block] of blocksBeforeAnchor) {
+      if (block.getText().startsWith(FACET_TITLE_SYMBOL)) {
+        currentFacetTitleKey = key;
+        break;
+      }
+    }
+
+    let isWithinCurrentFacet = false;
+    let currentFacetText = "";
+
+    blockMap.forEach((block, key) => {
+      const isLastBlock = block === blockMap.last();
+      const isFacetTitle = block?.getText().startsWith(FACET_TITLE_SYMBOL);
+
+      if (key === currentFacetTitleKey) {
+        isWithinCurrentFacet = true;
+      } else if (isWithinCurrentFacet && (isFacetTitle || isLastBlock)) {
+        isWithinCurrentFacet = false;
+      }
+      if (isWithinCurrentFacet) {
+        currentFacetText += block?.getText() + "\n";
+      }
+    });
+    return currentFacetText.trim();
+  };
+
   // helper function to launch hone panel
   const launchHonePanel = () => {
     const currentSelection = editorState.getSelection();
     const anchorKey = currentSelection.getAnchorKey();
     const startOffset = currentSelection.getStartOffset();
     const firstBlockKey = editorState.getCurrentContent().getFirstBlock().getKey();
+
     const isBlockEmpty = editorState.getCurrentContent().getBlockForKey(anchorKey).getText().length === 0;
     const isStartOfBlock = startOffset === 0;
-    const isArticleTitle = anchorKey === firstBlockKey;
-    // check if "any block is facet title" before the current block
-    const isAfterFacetTitle = editorState
-      .getCurrentContent()
-      .getBlockMap()
-      .takeUntil((block) => block?.getKey() === anchorKey)
-      .some((block) => (block ? block.getText().startsWith(FACET_TITLE_SYMBOL) : false));
+    const isNotArticleTitle = anchorKey !== firstBlockKey;
+    const currentFacetText = getCurrentFacetText(anchorKey);
 
-    if (isBlockEmpty && isStartOfBlock && !isArticleTitle && isAfterFacetTitle) {
+    if (isBlockEmpty && isStartOfBlock && isNotArticleTitle && currentFacetText !== "") {
       const editorRoot = editorRef.current;
       let topPosition = 0;
 
@@ -170,6 +206,7 @@ const HoneEditor = () => {
 
       setSavedSelection(currentSelection);
       setHonePanelTopPosition(topPosition);
+      setCurrentFacetText(currentFacetText);
       setActiveHonePanel(true);
     }
   };
@@ -238,7 +275,7 @@ const HoneEditor = () => {
 
   return (
     <div>
-      <div ref={editorRef} className="article">
+      <div ref={editorRef}>
         <Editor
           editorState={editorState}
           onChange={onChange}
@@ -251,14 +288,15 @@ const HoneEditor = () => {
           handlePastedText={handlePastedText}
         />
       </div>
-      <div>
+      {honePanelTopPosition && currentFacetText !== null && (
         <HonePanel
           isActive={activeHonePanel}
           topPosition={honePanelTopPosition}
           onSelectFacet={handleFacetInsert}
           onClose={closeHonePanel}
+          currentFacetText={currentFacetText}
         />
-      </div>
+      )}
     </div>
   );
 };

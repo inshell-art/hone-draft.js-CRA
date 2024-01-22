@@ -173,9 +173,6 @@ body {
     background-color: var(--dark-black);
     color: var(--dark-white);
   }
-  .article a {
-    color: var(--dark-white);
-  }
 
   .not-facet {
     font-weight: calc(var(--light) - 100);

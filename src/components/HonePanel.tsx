@@ -4,18 +4,27 @@ import { Facet } from "../types/types";
 import React, { useState, useEffect } from "react";
 import { on } from "events";
 import { is } from "immutable";
+import { jaccardSimilarity } from "../services/similarityService";
 
-const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose }: HonePanelProps) => {
-  const [facets, setFacets] = useState<Facet[]>([]);
+const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetText }: HonePanelProps) => {
+  const [facets, setFacets] = useState<(Facet & { similarty: number })[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
 
   // fetch all facets
   useEffect(() => {
-    fetchAllFacets().then((facets) => {
-      setFacets(facets);
-    });
-  }, []);
+    const fetchAndCalculateSimilarity = async () => {
+      const facets = await fetchAllFacets();
+      const facetsWithSimilarity = await Promise.all(
+        facets.map(async (facet) => {
+          const similarty = await jaccardSimilarity(currentFacetText, `${facet.title} ${facet.content}`.trim());
+          return { ...facet, similarty };
+        })
+      );
+      setFacets(facetsWithSimilarity);
+    };
+    fetchAndCalculateSimilarity();
+  }, [currentFacetText]);
 
   // Close panel when click outside
   useEffect(() => {
@@ -106,7 +115,7 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose }: HonePanelP
             onMouseOver={() => handleMouseOver(index)}
             onClick={() => onSelectFacet(facet.facetId)}
           >
-            {facet.title}
+            [{facet.similarty.toFixed(2)}] {facet.title}
           </div>
         ))}
       </div>
