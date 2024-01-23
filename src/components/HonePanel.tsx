@@ -4,27 +4,39 @@ import { Facet } from "../types/types";
 import React, { useState, useEffect } from "react";
 import { on } from "events";
 import { is } from "immutable";
-import { jaccardSimilarity } from "../services/similarityService";
+import { jaccardSimilarity, similarityBar } from "../utils/utils";
+import { BADRESP } from "dns";
+import { basename } from "path";
 
-const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetText }: HonePanelProps) => {
+const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetId }: HonePanelProps) => {
   const [facets, setFacets] = useState<(Facet & { similarty: number })[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
 
-  // fetch all facets
+  // fetch all facets and calculate the similarity
   useEffect(() => {
     const fetchAndCalculateSimilarity = async () => {
-      const facets = await fetchAllFacets();
-      const facetsWithSimilarity = await Promise.all(
-        facets.map(async (facet) => {
-          const similarty = await jaccardSimilarity(currentFacetText, `${facet.title} ${facet.content}`.trim());
-          return { ...facet, similarty };
-        })
-      );
-      setFacets(facetsWithSimilarity);
+      try {
+        const allFacets = await fetchAllFacets();
+        const otherFacets = allFacets.filter((facet) => facet.facetId !== currentFacetId);
+        const currentFacet = allFacets.find((facet) => facet.facetId === currentFacetId);
+        const currentFacetText = currentFacet ? `${currentFacet.title} ${currentFacet.content}`.trim() : null;
+
+        if (currentFacetText) {
+          const facetsWithSimilarity = otherFacets.map((facet) => {
+            const similarty = jaccardSimilarity(currentFacetText, `${facet.title} ${facet.content}`);
+            return { ...facet, similarty };
+          });
+          facetsWithSimilarity.sort((a, b) => b.similarty - a.similarty);
+
+          setFacets(facetsWithSimilarity);
+        }
+      } catch (error) {
+        console.log("Failed to fetch and calculate similarity:", error);
+      }
     };
     fetchAndCalculateSimilarity();
-  }, [currentFacetText]);
+  }, [currentFacetId]);
 
   // Close panel when click outside
   useEffect(() => {
@@ -108,16 +120,26 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
     <div ref={ref} style={passPosition} className="hone-panel">
       <div className="hone-panel-title">Select a facet to insert:</div>
       <div className="hone-panel-content">
-        {facets.map((facet, index) => (
-          <div
-            key={index}
-            className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
-            onMouseOver={() => handleMouseOver(index)}
-            onClick={() => onSelectFacet(facet.facetId)}
-          >
-            [{facet.similarty.toFixed(2)}] {facet.title}
-          </div>
-        ))}
+        {facets.map((facet, index) => {
+          const similarityBars = similarityBar(facet.similarty);
+          const maxOpacity = similarityBars.reduce((max, bar) => Math.max(max, bar.opacity), 0).toFixed(2);
+
+          return (
+            <div
+              key={index}
+              className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
+              onMouseOver={() => handleMouseOver(index)}
+              onClick={() => onSelectFacet(facet.facetId)}
+            >
+              {similarityBars.map((style, barIndex) => (
+                <span key={barIndex} style={style}>
+                  ▮
+                </span>
+              ))}{" "}
+              {facet.title} {facet.similarty.toFixed(3)} - {maxOpacity}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

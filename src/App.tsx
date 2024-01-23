@@ -12,29 +12,31 @@ import NavigationBar from "./components/NavigationBar";
 const App = () => {
   return (
     <ErrorBoundary fallback={<div>Something went wrong, please refresh or come back later.</div>}>
-      <Router>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <NavigationBar />
-                <Articles />
-              </>
-            }
-          />
-          <Route
-            path="/FACETs"
-            element={
-              <>
-                <NavigationBar />
-                <FACETs />
-              </>
-            }
-          />
-          <Route path="/article/:articleId" element={<HoneEditor />} />
-        </Routes>
-      </Router>
+      <div className="entire">
+        <Router>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <NavigationBar />
+                  <Articles />
+                </>
+              }
+            />
+            <Route
+              path="/FACETs"
+              element={
+                <>
+                  <NavigationBar />
+                  <FACETs />
+                </>
+              }
+            />
+            <Route path="/article/:articleId" element={<HoneEditor />} />
+          </Routes>
+        </Router>
+      </div>
     </ErrorBoundary>
   );
 };

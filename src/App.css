@@ -17,19 +17,20 @@
   --light: 300;
   --middle: 400;
   --heavy: 600;
+
+  --width: 780px;
 }
 
 body {
-  background-color: var(--light-white);
   color: var(--light-black);
-  width: 780px;
-  margin: var(--medium) auto;
-  font-family: "Source Code Pro", monospace;
-  font-size: var(--small);
-  font-weight: var(--middle);
-  line-height: 1.4;
+  background-color: var(--light-white);
 }
 
+.entire {
+  margin: var(--medium) auto;
+  width: var(--width);
+  font-family: "Source Code Pro", monospace;
+}
 /* For placeholder in hone editor */
 .public-DraftEditorPlaceholder-root {
   padding-top: var(--large);
@@ -77,6 +78,11 @@ body {
 }
 
 /* For HoneEditor */
+.editor {
+  font-size: var(--small);
+  font-weight: var(--middle);
+  line-height: 1.4;
+}
 .article-title {
   font-weight: var(--heavy);
   font-size: var(--large);
@@ -102,9 +108,8 @@ body {
 /* For HonePanel */
 .hone-panel {
   position: absolute;
-  width: 780px;
-  margin-top: var(--small);
   background-color: white;
+  width: var(--width);
 }
 
 .hone-panel-title {

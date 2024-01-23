@@ -25,5 +25,5 @@ export type HonePanelProps = {
   topPosition: number; // only vertical
   onSelectFacet: (facetId: string) => void;
   onClose: () => void;
-  currentFacetText: string;
+  currentFacetId: string;
 };
