@@ -20,16 +20,16 @@ const App = () => {
               element={
                 <>
                   <NavigationBar />
-                  <Articles />
+                  <FACETs />
                 </>
               }
             />
             <Route
-              path="/FACETs"
+              path="/Articles"
               element={
                 <>
                   <NavigationBar />
-                  <FACETs />
+                  <Articles />
                 </>
               }
             />

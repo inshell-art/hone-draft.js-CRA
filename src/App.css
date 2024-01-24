@@ -1,5 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap");
 
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 :root {
   --light-white: #f0f0f0;
   --light-black: #0f0f0f;
@@ -55,8 +67,36 @@ body {
   text-decoration: none;
 }
 
-.nav-bar-right {
-  margin-left: auto;
+.nav-Hone {
+  flex: 1;
+  text-align: center;
+  color: var(--Scheele-green);
+}
+
+.nav-Hone-bar1,
+.nav-Hone-bar2,
+.nav-Hone-bar3,
+.nav-Hone-bar4 {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.nav-Hone-word {
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
+  animation-delay: 0s;
+}
+.nav-Hone-bar1 {
+  animation-delay: 0.1s;
+}
+.nav-Hone-bar2 {
+  animation-delay: 0.2s;
+}
+.nav-Hone-bar3 {
+  animation-delay: 0.3s;
+}
+.nav-Hone-bar4 {
+  animation-delay: 0.4s;
 }
 
 .active-facets {
@@ -67,7 +107,7 @@ body {
   color: var(--light-black) !important;
 }
 
-.create-article {
+.btn-create-article {
   background-color: transparent;
   font-size: var(--small);
   color: var(--ash);

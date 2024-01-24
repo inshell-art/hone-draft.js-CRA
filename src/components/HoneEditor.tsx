@@ -44,9 +44,16 @@ import {
   Modifier,
   DraftHandleValue,
 } from "draft-js";
-import { getCurrentDate } from "../utils/utils";
+import { getCurrentDate, similarityBar } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
-import { submitArticle, fetchArticle, submitFacets, extractFacet } from "../services/indexedDBService";
+import {
+  submitArticle,
+  fetchArticle,
+  submitFacets,
+  extractFacet,
+  submitHonedBy,
+  getFacetTitle,
+} from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
 
@@ -159,6 +166,7 @@ const HoneEditor = () => {
       }
     }
 
+    if (!currentFacetTitleKey) return "";
     const currentFacetId = `${articleId}-${currentFacetTitleKey}`;
 
     return currentFacetId;
@@ -177,6 +185,7 @@ const HoneEditor = () => {
     const currentFacetId = getCurrentFacetId(anchorKey);
 
     if (isBlockEmpty && isStartOfBlock && isNotArticleTitle && currentFacetId) {
+      console.log("launchHonePanel", currentFacetId);
       const editorRoot = editorRef.current;
       let topPosition = 0;
 
@@ -235,6 +244,13 @@ const HoneEditor = () => {
     const updatedEditorState = EditorState.forceSelection(newEditorState, savedSelection!);
 
     setEditorState(updatedEditorState);
+    if (currentFacetId) {
+      submitHonedBy(currentFacetId, facetId);
+      const currentFacetTitle = await getFacetTitle(currentFacetId);
+      const facetTitle = await getFacetTitle(facetId);
+
+      console.log("submitHonedBy", currentFacetTitle, "honed by", facetTitle);
+    }
 
     setActiveHonePanel(false);
   };

@@ -21,16 +21,25 @@ const NavigationBar = () => {
   return (
     <div>
       <div className="nav-bar">
-        <div className="nav-bar-left">
-          <NavLink to="/FACETs" className={({ isActive }) => (isActive ? "active-facets" : "")}>
+        <div className="nav-FACETs">
+          <NavLink to="/" className={({ isActive }) => (isActive ? "active-facets" : "")}>
             $ FACETs &gt;
           </NavLink>
-          <NavLink to="/" className={({ isActive }) => (isActive ? "active-articles" : "")}>
+        </div>
+        <div className="nav-Articles">
+          <NavLink to="/Articles" className={({ isActive }) => (isActive ? "active-articles" : "")}>
             &lt; Articles
           </NavLink>
         </div>
-        <div className="nav-bar-right">
-          <button className="create-article" onClick={createArticle}>
+        <div className="nav-Hone">
+          <span className="nav-Hone-word">Hone</span>
+          <span className="nav-Hone-bar1">▮</span>
+          <span className="nav-Hone-bar2">▮</span>
+          <span className="nav-Hone-bar3">▮</span>
+          <span className="nav-Hone-bar4">▮</span>
+        </div>
+        <div className="nav-create-article">
+          <button className="btn-create-article" onClick={createArticle}>
             create article
           </button>
         </div>

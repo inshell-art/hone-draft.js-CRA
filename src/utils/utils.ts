@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ContentBlock } from "draft-js";
 import { Facet } from "../types/types";
 import { TOTAL_SIMILARITY_BARS } from "./constants";
+import { extractFacet } from "../services/indexedDBService";
 
 export const getCurrentDate = () => {
   const now = new Date();
