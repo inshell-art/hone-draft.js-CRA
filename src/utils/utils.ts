@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import { ContentBlock } from "draft-js";
-import { Facet } from "../types/types";
+import { Facet, FacetWithSimilarity } from "../types/types";
 import { TOTAL_SIMILARITY_BARS } from "./constants";
 import { extractFacet } from "../services/indexedDBService";
 
@@ -46,4 +46,13 @@ export const similarityBar = (similarity: number) => {
   }
 
   return bars;
+};
+
+export const calculateSimilarityAndSort = (currentFacetText: string, facets: Facet[]): FacetWithSimilarity[] => {
+  const facetSimilarities = facets.map((facet) => {
+    const similarity = jaccardSimilarity(currentFacetText, `${facet.title} ${facet.content}`);
+    return { ...facet, similarity };
+  });
+  const sortedFacets = facetSimilarities.sort((a, b) => b.similarity - a.similarity);
+  return sortedFacets;
 };

@@ -46,14 +46,7 @@ import {
 } from "draft-js";
 import { getCurrentDate, similarityBar } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
-import {
-  submitArticle,
-  fetchArticle,
-  submitFacets,
-  extractFacet,
-  submitHonedBy,
-  getFacetTitle,
-} from "../services/indexedDBService";
+import { submitArticle, fetchArticle, submitFacets, extractFacet, submitHonedBy } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
 
@@ -245,11 +238,12 @@ const HoneEditor = () => {
 
     setEditorState(updatedEditorState);
     if (currentFacetId) {
-      submitHonedBy(currentFacetId, facetId);
-      const currentFacetTitle = await getFacetTitle(currentFacetId);
-      const facetTitle = await getFacetTitle(facetId);
-
-      console.log("submitHonedBy", currentFacetTitle, "honed by", facetTitle);
+      try {
+        submitHonedBy(currentFacetId, facetId);
+        console.log("SubmitHonedBy:", currentFacetId, facetId);
+      } catch (error) {
+        console.error("Error of SubmitHonedBy:", error);
+      }
     }
 
     setActiveHonePanel(false);

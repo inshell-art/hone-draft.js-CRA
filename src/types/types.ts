@@ -12,13 +12,23 @@ export type Facet = {
   articleId: string;
   title: string;
   content?: string;
+  honedByArray?: HonedBy[];
 };
 
-export type FacetHonedBy = {
-  subjectId: string;
-  objectId: string;
+type HonedBy = {
+  honingFacetId: string;
+};
+
+export type FacetWithSimilarity = Facet & {
   similarity: number;
 };
+
+export type HonedFacetWithHoningFacets = {
+  honedFacet: Facet;
+  honingFacets: FacetWithSimilarity[];
+};
+
+export type FacetsList = HonedFacetWithHoningFacets[];
 
 export type HonePanelProps = {
   isActive: Boolean;
@@ -26,4 +36,8 @@ export type HonePanelProps = {
   onSelectFacet: (facetId: string) => void;
   onClose: () => void;
   currentFacetId: string;
+};
+
+export type SimilarityBarProps = {
+  similarity: number;
 };

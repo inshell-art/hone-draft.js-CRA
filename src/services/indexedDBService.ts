@@ -1,5 +1,5 @@
 import Dexie from "dexie";
-import { Article, Facet, FacetHonedBy } from "../types/types";
+import { Article, Facet } from "../types/types";
 import { ContentBlock, EditorState, genKey } from "draft-js";
 import { FACET_TITLE_SYMBOL } from "../utils/constants";
 import { jaccardSimilarity } from "../utils/utils";
@@ -8,19 +8,16 @@ import { jaccardSimilarity } from "../utils/utils";
 class HoneDatabase extends Dexie {
   articles: Dexie.Table<Article, string>;
   facets: Dexie.Table<Facet, string>;
-  facetsHonedBy: Dexie.Table<FacetHonedBy, string>;
 
   constructor() {
     super("HoneDatabase");
     this.version(1).stores({
-      articles: "articleId, updateAt, title",
-      facets: "facetId, articleId, title",
-      facetsHonedBy: "[subjectId+objectId], subjectId, objectId, similarity",
+      articles: "articleId",
+      facets: "facetId, articleId",
     });
 
     this.articles = this.table("articles");
     this.facets = this.table("facets");
-    this.facetsHonedBy = this.table("facetsHonedBy");
   }
 }
 
@@ -33,6 +30,11 @@ export const submitArticle = async (article: Article) => {
 export const fetchArticle = async (articleId: string) => {
   const article = await db.articles.get(articleId);
   return article;
+};
+
+export const fetchFacet = async (facetId: string) => {
+  const facet = await db.facets.get(facetId);
+  return facet;
 };
 
 export const fetchAllArticles = async () => {
@@ -133,94 +135,21 @@ export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => 
   return facetBlocks;
 };
 
-// submit honedBy: the object facets of object facet are also honedBy the subject facet
-// honedBy is a symmetric relation
+// submit honedBy:
+// honedBy is a transitive relation: if A is honedBy B, and B is honedBy C, then A is honedBy C
 // honedBy records the intentional insertion/honing only, not the effeictive honing like editing
-export const submitHonedBy = async (subjectId: string, objectId: string) => {
-  const submitSingleHonedBy = async (subjectId: string, objectId: string) => {
-    const similarity = jaccardSimilarity(subjectId, objectId);
-    await db.facetsHonedBy.put({ subjectId, objectId, similarity: similarity });
-  };
+export const submitHonedBy = async (currentFacetId: string, insertedFacetId: string) => {
+  const currentFacet = await db.facets.get(currentFacetId);
 
-  await submitSingleHonedBy(subjectId, objectId); // submit the direct honedBy
-
-  const objectFacetsOfObject = await db.facetsHonedBy.where({ subjectId: objectId }).toArray();
-  for (const objectFacet of objectFacetsOfObject) {
-    await submitSingleHonedBy(subjectId, objectFacet.objectId);
+  if (!currentFacet) {
+    throw new Error("Error: retrieve facet from indexedDB failed.");
   }
-};
 
-export const getFacetTitle = async (facetId: string) => {
-  const facet = await db.facets.get(facetId);
-  return facet?.title;
-};
+  const newHonedByEntry = { honingFacetId: insertedFacetId };
+  console.log("newHonedByEntry", newHonedByEntry);
 
-export const fetchFacetsWithHonedByCount = async () => {
-  const facets = await db.facets.toArray();
+  const updatedHonedBy = currentFacet.honedByArray ? [...currentFacet.honedByArray, newHonedByEntry] : [newHonedByEntry];
+  console.log("updatedHonedBy", updatedHonedBy);
 
-  let facetsWithHonedBy = await Promise.all(
-    facets.map(async (facet) => {
-      const facetsHonedBy = await db.facetsHonedBy.where({ subjectId: facet.facetId }).toArray();
-      const honedByCount = facetsHonedBy.length;
-
-      const honingFacet = await Promise.all(
-        facetsHonedBy.map(async (honedByData) => {
-          const objectFacet = await db.facets.get(honedByData.objectId);
-          return honingFacet && objectFacet
-            ? { ...honingFacet, similarity: honedByData.similarity, articleId: objectFacet.articleId }
-            : null;
-        })
-      );
-
-      const sortedHoningFacets = honingFacet
-        .filter((facet: Facet) => facet != null)
-        .sort((a: Facet, b: Facet) => b.similarity - a.similarity);
-
-      return {
-        ...facet,
-        honedByCount,
-        honingFacets: sortedHoningFacets,
-      };
-    })
-  );
-
-  facetsWithHonedBy = facetsWithHonedBy.sort((a, b) => b.honedByCount - a.honedByCount);
-
-  return facetsWithHonedBy;
-};
-
-export const fetchFacetsWithHonedByCount2 = async () => {
-  const facets = await db.facets.toArray();
-
-  let facetsWithHonedBy = await Promise.all(
-    facets.map(async (facet) => {
-      const honedByCount = await db.facetsHonedBy.where({ sbujectId: facet.facetId }).count();
-
-      // Fetch honing facets along with similarity scores and their articleId
-      const honingFacetsData = await db.facetsHonedBy.where({ subjectId: facet.facetId }).toArray();
-      const honingFacets = await Promise.all(
-        honingFacetsData.map(async (honingData) => {
-          const honingFacet = await db.facets.get(honingData.objectId);
-          return honingFacet ? { ...honingFacet, similarity: honingData.similarity, articleId: honingFacet.articleId } : null;
-        })
-      );
-
-      // Sort honing facets by similarity and filter out any null results
-      let sortedHoningFacets = honingFacets.filter((facet) => facet != null);
-
-      if (sortedHoningFacets.length > 1) {
-        sortedHoningFacets = sortedHoningFacets.sort((a, b) => b.similarity - a.similarity);
-      }
-
-      return {
-        ...facet,
-        honedByCount,
-        honingFacets: sortedHoningFacets,
-      };
-    })
-  );
-
-  facetsWithHonedBy = facetsWithHonedBy.sort((a, b) => b.honedByCount - a.honedByCount);
-
-  return facetsWithHonedBy;
+  await db.facets.put({ ...currentFacet, honedByArray: updatedHonedBy });
 };
