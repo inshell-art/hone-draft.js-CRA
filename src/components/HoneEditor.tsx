@@ -46,7 +46,7 @@ import {
 } from "draft-js";
 import { getCurrentDate, similarityBar } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
-import { submitArticle, fetchArticle, submitFacets, extractFacet, submitHonedBy } from "../services/indexedDBService";
+import { submitArticle, fetchArticle, submitFacets, extractFacet, submitHoningRecord } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
 
@@ -100,13 +100,14 @@ const HoneEditor = () => {
       } catch (error) {
         console.error("Error while submitArticle", error);
       }
-      setPrevArticleText(currentPlainText);
 
       try {
         submitFacets(articleId, newEditorState);
       } catch (error) {
         console.error("Error while submitFacets", error);
       }
+
+      setPrevArticleText(currentPlainText);
     }
   };
 
@@ -237,10 +238,10 @@ const HoneEditor = () => {
     const updatedEditorState = EditorState.forceSelection(newEditorState, savedSelection!);
 
     setEditorState(updatedEditorState);
+
     if (currentFacetId) {
       try {
-        submitHonedBy(currentFacetId, facetId);
-        console.log("SubmitHonedBy:", currentFacetId, facetId);
+        submitHoningRecord(currentFacetId, facetId);
       } catch (error) {
         console.error("Error of SubmitHonedBy:", error);
       }

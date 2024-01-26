@@ -1,4 +1,4 @@
-import { HonePanelProps, Facet } from "../types/types";
+import { HonePanelProps, Facet, FacetWithSimilarity } from "../types/types";
 import { fetchAllFacets, fetchFacet } from "../services/indexedDBService";
 import React, { useState, useEffect } from "react";
 import { calculateSimilarityAndSort, jaccardSimilarity, similarityBar } from "../utils/utils";
@@ -7,13 +7,13 @@ import { set } from "lodash";
 import SimilarityBars from "./SimilarityBars";
 
 const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetId }: HonePanelProps) => {
-  const [facets, setFacets] = useState<(Facet & { similarity: number })[]>([]);
+  const [facets, setFacets] = useState<FacetWithSimilarity[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
 
   // fetch all facets and calculate the similarity
   useEffect(() => {
-    const fetchAndCalculateSimilarity = async () => {
+    const fetchAndSortFacetsBySimilarity = async () => {
       try {
         const allFacets = await fetchAllFacets();
         const otherFacets = allFacets.filter((facet) => facet.facetId !== currentFacetId);
@@ -22,13 +22,15 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
 
         if (!currentFacetText) return;
 
-        const facetsWithSimilarity = calculateSimilarityAndSort(currentFacetText, otherFacets);
-        setFacets(facetsWithSimilarity);
+        const sortedFacetListBySimilarity = calculateSimilarityAndSort(currentFacetText, otherFacets);
+
+        setFacets(sortedFacetListBySimilarity);
       } catch (error) {
         console.log("Failed to fetch and calculate similarity:", error);
       }
     };
-    fetchAndCalculateSimilarity();
+
+    fetchAndSortFacetsBySimilarity();
   }, [currentFacetId]);
 
   // Close panel when click outside
@@ -122,7 +124,7 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
               onClick={() => onSelectFacet(facet.facetId)}
             >
               <SimilarityBars similarity={facet.similarity} />
-              <span className="facet-title">{facet.title}</span>
+              <span className="facet-title">{facet.facetTitle}</span>
             </div>
           );
         })}

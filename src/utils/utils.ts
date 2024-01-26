@@ -1,9 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
-import { useNavigate } from "react-router-dom";
-import { ContentBlock } from "draft-js";
 import { Facet, FacetWithSimilarity } from "../types/types";
-import { TOTAL_SIMILARITY_BARS } from "./constants";
-import { extractFacet } from "../services/indexedDBService";
 
 export const getCurrentDate = () => {
   const now = new Date();
@@ -48,11 +43,12 @@ export const similarityBar = (similarity: number) => {
   return bars;
 };
 
+// helper function: calculate similarities and sort facets by similarity
 export const calculateSimilarityAndSort = (currentFacetText: string, facets: Facet[]): FacetWithSimilarity[] => {
-  const facetSimilarities = facets.map((facet) => {
+  const facetsWithSimilarity = facets.map((facet) => {
     const similarity = jaccardSimilarity(currentFacetText, `${facet.title} ${facet.content}`);
-    return { ...facet, similarity };
+    return { facetId: facet.facetId, facetTitle: facet.title, similarity };
   });
-  const sortedFacets = facetSimilarities.sort((a, b) => b.similarity - a.similarity);
+  const sortedFacets = facetsWithSimilarity.sort((a, b) => b.similarity - a.similarity);
   return sortedFacets;
 };

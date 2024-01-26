@@ -1,23 +1,25 @@
 import Dexie from "dexie";
-import { Article, Facet } from "../types/types";
+import { Article, Facet, HoningRecord } from "../types/types";
 import { ContentBlock, EditorState, genKey } from "draft-js";
 import { FACET_TITLE_SYMBOL } from "../utils/constants";
-import { jaccardSimilarity } from "../utils/utils";
 
 // Initialize database
 class HoneDatabase extends Dexie {
   articles: Dexie.Table<Article, string>;
   facets: Dexie.Table<Facet, string>;
+  hongingRecords: Dexie.Table<HoningRecord, number>;
 
   constructor() {
     super("HoneDatabase");
     this.version(1).stores({
       articles: "articleId",
       facets: "facetId, articleId",
+      hongingRecords: "++id, honedFacetId, honingFacetId",
     });
 
     this.articles = this.table("articles");
     this.facets = this.table("facets");
+    this.hongingRecords = this.table("hongingRecords");
   }
 }
 
@@ -135,21 +137,30 @@ export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => 
   return facetBlocks;
 };
 
-// submit honedBy:
-// honedBy is a transitive relation: if A is honedBy B, and B is honedBy C, then A is honedBy C
-// honedBy records the intentional insertion/honing only, not the effeictive honing like editing
-export const submitHonedBy = async (currentFacetId: string, insertedFacetId: string) => {
-  const currentFacet = await db.facets.get(currentFacetId);
+/**
+ * submit honing record to indexedDB:
+ *
+ * Honing operation adheres two characteristics:
+ * 1. The more honing, the more valuable;
+ * 2. Honing is a conscious operation.
+ *
+ * So, the rules are:
+ * Honing is a transitive relation: if A is honedBy B, and B is honedBy C, then A is honedBy C
+ * Honing records the intentional insertion/honing only, not the effeictive honing like editing
+ * Honing is duplicative: if A honing B twice, then there are two honing records
+ *
+ *  */
+export const submitHoningRecord = async (currentFacetId: string, insertedFacetId: string) => {
+  try {
+    await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: insertedFacetId });
 
-  if (!currentFacet) {
-    throw new Error("Error: retrieve facet from indexedDB failed.");
+    // pass transitive relation to current facet
+    const honedFacetsOfInsertedFacet = await db.hongingRecords.where("honedFacetId").equals(insertedFacetId).toArray();
+
+    for (const honedFacet of honedFacetsOfInsertedFacet) {
+      await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: honedFacet.honingFacetId });
+    }
+  } catch (error) {
+    console.log(error);
   }
-
-  const newHonedByEntry = { honingFacetId: insertedFacetId };
-  console.log("newHonedByEntry", newHonedByEntry);
-
-  const updatedHonedBy = currentFacet.honedByArray ? [...currentFacet.honedByArray, newHonedByEntry] : [newHonedByEntry];
-  console.log("updatedHonedBy", updatedHonedBy);
-
-  await db.facets.put({ ...currentFacet, honedByArray: updatedHonedBy });
 };

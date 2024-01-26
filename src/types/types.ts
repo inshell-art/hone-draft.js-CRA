@@ -12,14 +12,17 @@ export type Facet = {
   articleId: string;
   title: string;
   content?: string;
-  honedByArray?: HonedBy[];
 };
 
-type HonedBy = {
+export type HoningRecord = {
+  honedFacetId: string;
   honingFacetId: string;
 };
 
-export type FacetWithSimilarity = Facet & {
+// Transeint data types for facet list
+export type FacetWithSimilarity = {
+  facetId: string;
+  facetTitle: string;
   similarity: number;
 };
 
