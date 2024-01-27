@@ -141,7 +141,7 @@ export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => 
  * submit honing record to indexedDB:
  *
  * Honing operation adheres two characteristics:
- * 1. The more honing, the more valuable;
+ * 1. hoing is the relationship could be transitive, and values are equal in different heirarchies
  * 2. Honing is a conscious operation.
  *
  * So, the rules are:
@@ -163,4 +163,14 @@ export const submitHoningRecord = async (currentFacetId: string, insertedFacetId
   } catch (error) {
     console.log(error);
   }
+};
+
+export const fetchHoningRecord = async (currentFacetId: string, insertedFacetId: string) => {
+  const honingRecord = await db.hongingRecords
+    .where("honedFacetId")
+    .equals(currentFacetId)
+    .and((record) => record.honingFacetId === insertedFacetId)
+    .first();
+
+  return honingRecord;
 };

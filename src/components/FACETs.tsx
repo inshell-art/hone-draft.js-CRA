@@ -6,10 +6,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { fetchAllFacets, fetchFacet } from "../services/indexedDBService";
-import { Facet, FacetWithSimilarity, FacetsList, HonedFacetWithHoningFacets } from "../types/types";
+import { fetchAllFacets, fetchAllHoningRecord, fetchFacet } from "../services/indexedDBService";
+import { Facet, FacetWithSimilarity, FacetList, HonedFacetWithHoningFacets } from "../types/types";
 import { calculateSimilarityAndSort } from "../utils/utils";
 import SimilarityBars from "./SimilarityBars";
+import _ from "lodash";
 
 const FACETs = () => {
   const [facetList, setFacetList] = useState<FacetsList>([]);
@@ -18,43 +19,24 @@ const FACETs = () => {
     const facetList = async () => {
       try {
         const allFacets = await fetchAllFacets();
+        const allHoningRecords = await fetchAllHoningRecord();
 
-        const facetList: FacetsList = await Promise.all(
-          allFacets.map(async (facet) => {
-            const currentFacetText = `${facet.title} ${facet.content}`.trim();
+        const aggregatedFacets: FacetList = allFacets.map((facet) => {
+          const honingRecordForFacet = allHoningRecords.filter((record) => record.honedFacetId === facet.facetId) || [];
+          const deduplicatedHoningRecordForFacet = _.uniqWith(honingRecordForFacet, _.isEqual);
 
-            if (facet.honedByArray && facet.honedByArray.length > 0) {
-              const honingFacets = (
-                await Promise.all(
-                  facet.honedByArray.map(async (honedBy) => {
-                    const fetchedFacet = await fetchFacet(honedBy.honingFacetId);
-                    return fetchedFacet ? fetchedFacet : null;
-                  })
-                )
-              ).filter((facet) => facet !== undefined) as Facet[];
+          const currentFacetText = `${facet.title} ${facet.content}`.trim();
 
-              const sortedHoningFacets = calculateSimilarityAndSort(currentFacetText, honingFacets);
+          const honingFacets = deduplicatedHoningRecordForFacet.map((record) => {
+            return allFacets.find((facet) => facet.facetId === record.honingFacetId);
+          }); // TODO: comprehend null check, undefined check, and is it meaningfule to sort an array.length === 0?
 
-              return {
-                honedFacet: facet,
-                honingFacets: sortedHoningFacets,
-              };
-            } else {
-              return {
-                honedFacet: facet,
-                honingFacets: [],
-              };
-            }
-          })
-        );
+          if (honingFacets.length > 0) {
+            calculateSimilarityAndSort(currentFacetText, honingFacets);
+          }
 
-        const sortedFacetList = facetList.sort((a, b) => {
-          const aCount = a?.honedFacet.honedByArray?.length ?? 0;
-          const bCount = b?.honedFacet.honedByArray?.length ?? 0;
-          return bCount - aCount;
+          return { honedFacet: facet, honingFacets: sortedHoingFacets };
         });
-
-        return sortedFacetList;
       } catch (error) {
         console.log("Failed to fetch facets to create facet list:", error);
       }

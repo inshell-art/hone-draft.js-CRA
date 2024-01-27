@@ -31,7 +31,7 @@ export type HonedFacetWithHoningFacets = {
   honingFacets: FacetWithSimilarity[];
 };
 
-export type FacetsList = HonedFacetWithHoningFacets[];
+export type FacetList = HonedFacetWithHoningFacets[];
 
 export type HonePanelProps = {
   isActive: Boolean;
