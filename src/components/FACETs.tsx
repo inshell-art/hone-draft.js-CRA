@@ -10,58 +10,59 @@ import { fetchAllFacets, fetchAllHoningRecord, fetchFacet } from "../services/in
 import { Facet, FacetWithSimilarity, FacetList, HonedFacetWithHoningFacets } from "../types/types";
 import { calculateSimilarityAndSort } from "../utils/utils";
 import SimilarityBars from "./SimilarityBars";
-import _ from "lodash";
+import _, { set } from "lodash";
 
 const FACETs = () => {
-  const [facetList, setFacetList] = useState<FacetsList>([]);
+  const [facetList, setFacetList] = useState<FacetList>([]);
 
   useEffect(() => {
-    const facetList = async () => {
+    (async () => {
       try {
         const allFacets = await fetchAllFacets();
         const allHoningRecords = await fetchAllHoningRecord();
 
         const aggregatedFacets: FacetList = allFacets.map((facet) => {
           const honingRecordForFacet = allHoningRecords.filter((record) => record.honedFacetId === facet.facetId) || [];
-          const deduplicatedHoningRecordForFacet = _.uniqWith(honingRecordForFacet, _.isEqual);
-
           const currentFacetText = `${facet.title} ${facet.content}`.trim();
+          let sortedHoningFacets: FacetWithSimilarity[] = [];
 
-          const honingFacets = deduplicatedHoningRecordForFacet.map((record) => {
-            return allFacets.find((facet) => facet.facetId === record.honingFacetId);
-          }); // TODO: comprehend null check, undefined check, and is it meaningfule to sort an array.length === 0?
+          const honingFacets = honingRecordForFacet
+            .map((record) => {
+              return allFacets.find((facet) => facet.facetId === record.honingFacetId);
+            })
+            .filter((facet): facet is Facet => facet !== undefined); // find will get the first one only so don't have to worry about multiple honing facets
 
           if (honingFacets.length > 0) {
-            calculateSimilarityAndSort(currentFacetText, honingFacets);
+            sortedHoningFacets = calculateSimilarityAndSort(currentFacetText, honingFacets);
           }
 
-          return { honedFacet: facet, honingFacets: sortedHoingFacets };
+          return { honedFacet: facet, honingFacets: sortedHoningFacets };
         });
+        // sort the aggregatedFacets by the times of honed
+        const sortedAggregatedFacets = _.orderBy(
+          aggregatedFacets,
+          [(aggregatedFacet) => aggregatedFacet.honingFacets.length, (aggregatedFacet) => aggregatedFacet.honedFacet.title],
+          ["desc", "asc"]
+        );
+
+        setFacetList(sortedAggregatedFacets);
       } catch (error) {
         console.log("Failed to fetch facets to create facet list:", error);
       }
-    };
-
-    facetList().then((facetList) => {
-      if (facetList) {
-        setFacetList(facetList);
-      }
-    });
+    })();
   }, []);
 
   return (
     <div>
       <div className="FACETs">
-        {facetList.map((honedFacetWithHoningFacets) => (
-          <div key={honedFacetWithHoningFacets.honedFacet.facetId} className="honed-facet">
-            <Link to={`/article/${honedFacetWithHoningFacets.honedFacet.articleId}`}>
-              {honedFacetWithHoningFacets.honedFacet.title}
-            </Link>
+        {facetList.map((facet) => (
+          <div key={facet.honedFacet.facetId} className="honed-facet">
+            <Link to={`/article/${facet.honedFacet.articleId}`}>{facet.honedFacet.title}</Link>
             <div className="honing-facet">
-              {honedFacetWithHoningFacets.honingFacets.map((honingFacet) => (
+              {facet.honingFacets.map((honingFacet) => (
                 <div key={honingFacet.facetId}>
                   <SimilarityBars similarity={honingFacet.similarity} />
-                  <Link to={`/article/${honingFacet.articleId}`}>{honingFacet.title}</Link>
+                  <Link to={`/article/${honingFacet.articleId}`}>{honingFacet.facetTitle}</Link>
                 </div>
               ))}
             </div>

@@ -47,7 +47,7 @@ export const similarityBar = (similarity: number) => {
 export const calculateSimilarityAndSort = (currentFacetText: string, facets: Facet[]): FacetWithSimilarity[] => {
   const facetsWithSimilarity = facets.map((facet) => {
     const similarity = jaccardSimilarity(currentFacetText, `${facet.title} ${facet.content}`);
-    return { facetId: facet.facetId, facetTitle: facet.title, similarity };
+    return { facetId: facet.facetId, articleId: facet.articleId, facetTitle: facet.title, similarity };
   });
   const sortedFacets = facetsWithSimilarity.sort((a, b) => b.similarity - a.similarity);
   return sortedFacets;

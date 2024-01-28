@@ -155,22 +155,17 @@ export const submitHoningRecord = async (currentFacetId: string, insertedFacetId
     await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: insertedFacetId });
 
     // pass transitive relation to current facet
-    const honedFacetsOfInsertedFacet = await db.hongingRecords.where("honedFacetId").equals(insertedFacetId).toArray();
+    const honingFacetsOfInsertedFacet = await db.hongingRecords.where("honedFacetId").equals(insertedFacetId).toArray();
 
-    for (const honedFacet of honedFacetsOfInsertedFacet) {
-      await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: honedFacet.honingFacetId });
+    for (const honingFacet of honingFacetsOfInsertedFacet) {
+      await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: honingFacet.honingFacetId });
     }
   } catch (error) {
     console.log(error);
   }
 };
 
-export const fetchHoningRecord = async (currentFacetId: string, insertedFacetId: string) => {
-  const honingRecord = await db.hongingRecords
-    .where("honedFacetId")
-    .equals(currentFacetId)
-    .and((record) => record.honingFacetId === insertedFacetId)
-    .first();
-
-  return honingRecord;
+export const fetchAllHoningRecord = async () => {
+  const honingRecords = await db.hongingRecords.toArray();
+  return honingRecords;
 };

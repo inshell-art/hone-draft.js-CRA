@@ -193,6 +193,10 @@ body {
 }
 
 /* For FACETs */
+.FACETs {
+  color: var(--Scheele-green);
+}
+
 .FACETs a {
   color: var(--Scheele-green);
   text-decoration: none;
