@@ -12,7 +12,10 @@ const SimilarityBars = ({ similarity }: SimilarityBarProps) => {
           ▮
         </span>
       ))}
-      <span> {/*{similarity.toFixed(3)} - {maxOpacity}*/}</span>
+      <span>
+        {" "}
+        {similarity.toFixed(3)} - {maxOpacity}
+      </span>
     </>
   );
 };
