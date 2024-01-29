@@ -31,7 +31,7 @@
 // #endregion description
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import {
   Editor,
   ContentBlock,
@@ -46,7 +46,13 @@ import {
 } from "draft-js";
 import { getCurrentDate, similarityBar } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
-import { submitArticle, fetchArticle, submitFacets, extractFacet, submitHoningRecord } from "../services/indexedDBService";
+import {
+  submitArticle,
+  fetchArticle,
+  submitFacets,
+  submitHoningRecord,
+  extractFacetForInsert,
+} from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
 
@@ -76,6 +82,8 @@ const HoneEditor = () => {
   const [honePanelTopPosition, setHonePanelTopPosition] = useState<number | null>(null);
   const [savedSelection, setSavedSelection] = useState<SelectionState | null>(null);
   const [currentFacetId, setCurrentFacetId] = useState<string | null>(null);
+  const blocksRef = useRef<Record<string, HTMLDivElement | null>>({}); // for the fragment identifier
+  const location = useLocation();
 
   // initialize the editor with the article
   useEffect(() => {
@@ -87,6 +95,30 @@ const HoneEditor = () => {
       setPrevArticleText(editorState.getCurrentContent().getPlainText());
     });
   }, [articleId]);
+
+  // get the hash, set selection, and scroll to the block
+  useEffect(() => {
+    const hash = location.hash;
+    const blockId = hash.replace(/^#/, "").replace(`${articleId}-`, "");
+    if (blockId) {
+      const blockArray = editorState.getCurrentContent().getBlocksAsArray();
+
+      const targetBlock = blockArray.find((block) => block.getKey() === blockId);
+      if (targetBlock) {
+        const targetBlockKey = targetBlock.getKey();
+
+        const selectionState = SelectionState.createEmpty(targetBlockKey).merge({
+          anchorKey: targetBlockKey,
+          focusKey: targetBlockKey,
+        });
+        setEditorState(EditorState.forceSelection(editorState, selectionState));
+
+        if (blocksRef.current[targetBlockKey]) {
+          blocksRef.current[targetBlockKey]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }
+    }
+  }, [location.hash, articleId, editorState]);
 
   // save the article and facets if the content in is changed respectively
   const onChange = (newEditorState: EditorState) => {
@@ -221,7 +253,7 @@ const HoneEditor = () => {
 
     let facetBlockArray: ContentBlock[] | undefined;
     try {
-      facetBlockArray = await extractFacet(facetId);
+      facetBlockArray = await extractFacetForInsert(facetId);
     } catch (error) {
       console.error(error);
     }

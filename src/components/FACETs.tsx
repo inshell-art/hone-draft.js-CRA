@@ -23,14 +23,15 @@ const FACETs = () => {
 
         const aggregatedFacets: FacetList = allFacets.map((facet) => {
           const honingRecordForFacet = allHoningRecords.filter((record) => record.honedFacetId === facet.facetId) || [];
+          const deduplicatedHoningRecordForFacet = _.uniqBy(honingRecordForFacet, (record) => record.honingFacetId);
           const currentFacetText = `${facet.title} ${facet.content}`.trim();
           let sortedHoningFacets: FacetWithSimilarity[] = [];
 
-          const honingFacets = honingRecordForFacet
+          const honingFacets = deduplicatedHoningRecordForFacet
             .map((record) => {
               return allFacets.find((facet) => facet.facetId === record.honingFacetId);
             })
-            .filter((facet): facet is Facet => facet !== undefined); // find will get the first one only so don't have to worry about multiple honing facets
+            .filter((facet): facet is Facet => facet !== undefined);
 
           if (honingFacets.length > 0) {
             sortedHoningFacets = calculateSimilarityAndSort(currentFacetText, honingFacets);
@@ -38,7 +39,8 @@ const FACETs = () => {
 
           return { honedFacet: facet, honingFacets: sortedHoningFacets };
         });
-        // sort the aggregatedFacets by the times of honed
+
+        // sort the aggregatedFacets by the number of honingFacets and then by the title of the honedFacet
         const sortedAggregatedFacets = _.orderBy(
           aggregatedFacets,
           [(aggregatedFacet) => aggregatedFacet.honingFacets.length, (aggregatedFacet) => aggregatedFacet.honedFacet.title],
@@ -57,12 +59,12 @@ const FACETs = () => {
       <div className="FACETs">
         {facetList.map((facet) => (
           <div key={facet.honedFacet.facetId} className="honed-facet">
-            <Link to={`/article/${facet.honedFacet.articleId}`}>{facet.honedFacet.title}</Link>
+            <Link to={`/article/${facet.honedFacet.articleId}#${facet.honedFacet.facetId}`}>{facet.honedFacet.title}</Link>
             <div className="honing-facet">
               {facet.honingFacets.map((honingFacet) => (
                 <div key={honingFacet.facetId}>
                   <SimilarityBars similarity={honingFacet.similarity} />
-                  <Link to={`/article/${honingFacet.articleId}`}>{honingFacet.facetTitle}</Link>
+                  <Link to={`/article/${honingFacet.articleId}#${honingFacet.facetId}`}>{honingFacet.facetTitle}</Link>
                 </div>
               ))}
             </div>

@@ -111,15 +111,19 @@ export const submitFacets = async (articleId: string, editorState: EditorState) 
 // #endregion
 
 // Extract a facet as content blocks from indexedDB by facetId
-export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => {
+export const extractFacetForInsert = async (facetId: string): Promise<ContentBlock[]> => {
   const facet = await db.facets.get(facetId);
   if (!facet) {
     throw new Error("Error: retrieve facet from indexedDB failed.");
   }
 
+  // Replace $ with ¢ in the title
+  const modifiedTitle = facet.title.replace("$", "¢") || "";
+  console.log(modifiedTitle);
+
   const titleBlock = new ContentBlock({
     key: genKey(),
-    text: facet.title || "",
+    text: modifiedTitle,
     type: "unstyled",
   });
 
@@ -147,8 +151,9 @@ export const extractFacet = async (facetId: string): Promise<ContentBlock[]> => 
  * So, the rules are:
  * Honing is a transitive relation: if A is honedBy B, and B is honedBy C, then A is honedBy C
  * Honing records the intentional insertion/honing only, not the effeictive honing like editing
- * Honing is duplicative: if A honing B twice, then there are two honing records
+ * Honing is deduplicative: if A honing B twice, then the second honing is ignored.
  *
+ * TODO: deduplicate honing record
  *  */
 export const submitHoningRecord = async (currentFacetId: string, insertedFacetId: string) => {
   try {
