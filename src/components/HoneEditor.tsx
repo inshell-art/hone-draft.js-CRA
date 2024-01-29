@@ -30,7 +30,7 @@
  */
 // #endregion description
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import {
   Editor,
@@ -55,6 +55,7 @@ import {
 } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
+import { set } from "lodash";
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
@@ -84,6 +85,7 @@ const HoneEditor = () => {
   const [currentFacetId, setCurrentFacetId] = useState<string | null>(null);
   const blocksRef = useRef<Record<string, HTMLDivElement | null>>({}); // for the fragment identifier
   const location = useLocation();
+  const [targetBlockId, setTargetBlockId] = useState<string | null>(null);
 
   // initialize the editor with the article
   useEffect(() => {
@@ -96,14 +98,14 @@ const HoneEditor = () => {
     });
   }, [articleId]);
 
-  // get the hash, set selection, and scroll to the block
+  // Set selection and scroll to the target block marked by the hash fragment identifier
   useEffect(() => {
     const hash = location.hash;
     const blockId = hash.replace(/^#/, "").replace(`${articleId}-`, "");
     if (blockId) {
       const blockArray = editorState.getCurrentContent().getBlocksAsArray();
-
       const targetBlock = blockArray.find((block) => block.getKey() === blockId);
+
       if (targetBlock) {
         const targetBlockKey = targetBlock.getKey();
 
@@ -112,13 +114,38 @@ const HoneEditor = () => {
           focusKey: targetBlockKey,
         });
         setEditorState(EditorState.forceSelection(editorState, selectionState));
+        // BUG: the selection will be updated while editorState changes
 
         if (blocksRef.current[targetBlockKey]) {
           blocksRef.current[targetBlockKey]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
+
+        setTargetBlockId(targetBlockKey);
       }
     }
   }, [location.hash, articleId, editorState]);
+
+  const blockRendererFn = (contentBlock: ContentBlock) => {
+    const blockKey = contentBlock.getKey();
+    if (blockKey === targetBlockId) {
+      // Replace with your specific condition
+      return {
+        component: ({ children }: { children: ReactNode }) => {
+          // Ref callback to store a reference to the block's DOM element
+          const refCallback = (element: HTMLDivElement | null) => {
+            if (element) {
+              blocksRef.current[blockKey] = element;
+            }
+          };
+
+          // Custom rendering logic for the block
+          return <div ref={refCallback}>{children}</div>;
+        },
+        // Props passed to the anonymous component
+        props: {},
+      };
+    }
+  };
 
   // save the article and facets if the content in is changed respectively
   const onChange = (newEditorState: EditorState) => {
@@ -313,6 +340,7 @@ const HoneEditor = () => {
           readOnly={activeHonePanel}
           spellCheck={true}
           handlePastedText={handlePastedText}
+          blockRendererFn={blockRendererFn}
         />
       </div>
       {honePanelTopPosition && currentFacetId !== null && (
