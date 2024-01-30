@@ -30,7 +30,7 @@
  */
 // #endregion description
 
-import { useState, useEffect, useRef, ReactNode } from "react";
+import React, { useState, useEffect, useRef, ReactNode, JSXElementConstructor } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import {
   Editor,
@@ -43,6 +43,7 @@ import {
   ContentState,
   Modifier,
   DraftHandleValue,
+  EditorBlock,
 } from "draft-js";
 import { getCurrentDate, similarityBar } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
@@ -83,7 +84,7 @@ const HoneEditor = () => {
   const [honePanelTopPosition, setHonePanelTopPosition] = useState<number | null>(null);
   const [savedSelection, setSavedSelection] = useState<SelectionState | null>(null);
   const [currentFacetId, setCurrentFacetId] = useState<string | null>(null);
-  const blocksRef = useRef<Record<string, HTMLDivElement | null>>({}); // for the fragment identifier
+  const blocksRef = useRef<Record<string, HTMLDivElement | null>>({}); // for the target block
   const location = useLocation();
   const [targetBlockId, setTargetBlockId] = useState<string | null>(null);
 
@@ -98,54 +99,57 @@ const HoneEditor = () => {
     });
   }, [articleId]);
 
-  // Set selection and scroll to the target block marked by the hash fragment identifier
+  // #region Scroll to the target block when a link from facet list is clicked
+
+  // Extract blockId from hash
   useEffect(() => {
     const hash = location.hash;
     const blockId = hash.replace(/^#/, "").replace(`${articleId}-`, "");
+
     if (blockId) {
-      const blockArray = editorState.getCurrentContent().getBlocksAsArray();
-      const targetBlock = blockArray.find((block) => block.getKey() === blockId);
-
-      if (targetBlock) {
-        const targetBlockKey = targetBlock.getKey();
-
-        const selectionState = SelectionState.createEmpty(targetBlockKey).merge({
-          anchorKey: targetBlockKey,
-          focusKey: targetBlockKey,
-        });
-        setEditorState(EditorState.forceSelection(editorState, selectionState));
-        // BUG: the selection will be updated while editorState changes
-
-        if (blocksRef.current[targetBlockKey]) {
-          blocksRef.current[targetBlockKey]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-
-        setTargetBlockId(targetBlockKey);
-      }
+      setTargetBlockId(blockId);
     }
-  }, [location.hash, articleId, editorState]);
+  }, [location.hash, articleId]);
 
+  // Scroll to the target block with a delay to wait for the block to be rendered
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (targetBlockId && blocksRef.current[targetBlockId]) {
+        const blockElement = blocksRef.current[targetBlockId];
+
+        if (blockElement) {
+          const scrollPosition = blockElement.getBoundingClientRect().top + window.scrollY - 100;
+          window.scrollTo({ top: scrollPosition, behavior: "smooth" });
+        }
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [targetBlockId]);
+
+  // Wrapper for the target block to get the ref
+  const BlockRefWrapper = ({ blockKey, children }: { blockKey: string; children: ReactNode }) => {
+    return <div ref={(el) => (blocksRef.current[blockKey] = el)}>{children}</div>;
+  };
+
+  // Add ref to the target block only as the custom block renderer
   const blockRendererFn = (contentBlock: ContentBlock) => {
     const blockKey = contentBlock.getKey();
-    if (blockKey === targetBlockId) {
-      // Replace with your specific condition
-      return {
-        component: ({ children }: { children: ReactNode }) => {
-          // Ref callback to store a reference to the block's DOM element
-          const refCallback = (element: HTMLDivElement | null) => {
-            if (element) {
-              blocksRef.current[blockKey] = element;
-            }
-          };
 
-          // Custom rendering logic for the block
-          return <div ref={refCallback}>{children}</div>;
-        },
-        // Props passed to the anonymous component
+    if (blockKey === targetBlockId) {
+      return {
+        component: (blockProps: EditorBlock) => (
+          <BlockRefWrapper blockKey={blockKey}>
+            <EditorBlock {...blockProps} />
+          </BlockRefWrapper>
+        ),
         props: {},
       };
     }
+
+    return null;
   };
+  // #endregion Scroll to the target block when a link from facet list is clicked
 
   // save the article and facets if the content in is changed respectively
   const onChange = (newEditorState: EditorState) => {
