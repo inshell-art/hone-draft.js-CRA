@@ -1,9 +1,3 @@
-/**
- * the component for the FACETs page
- */
-
-// list all facets in the database
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { fetchAllFacets, fetchAllHoningRecord } from "../services/indexedDBService";
