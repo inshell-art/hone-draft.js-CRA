@@ -1,9 +1,8 @@
-import { HonePanelProps, Facet, FacetWithSimilarity } from "../types/types";
-import { fetchAllFacets, fetchFacet } from "../services/indexedDBService";
+import { HonePanelProps, FacetWithSimilarity } from "../types/types";
+import { fetchAllFacets } from "../services/indexedDBService";
 import React, { useState, useEffect } from "react";
-import { calculateSimilarityAndSort, jaccardSimilarity, similarityBar } from "../utils/utils";
+import { calculateSimilarityAndSort } from "../utils/utils";
 import { INSERT_PROMPT } from "../utils/constants";
-import { set } from "lodash";
 import SimilarityBars from "./SimilarityBars";
 
 const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetId }: HonePanelProps) => {

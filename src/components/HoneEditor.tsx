@@ -30,7 +30,7 @@
  */
 // #endregion description
 
-import React, { useState, useEffect, useRef, ReactNode, JSXElementConstructor } from "react";
+import React, { useState, useEffect, useRef, ReactNode } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import {
   Editor,
@@ -45,7 +45,7 @@ import {
   DraftHandleValue,
   EditorBlock,
 } from "draft-js";
-import { getCurrentDate, similarityBar } from "../utils/utils";
+import { getCurrentDate } from "../utils/utils";
 import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
 import {
   submitArticle,
@@ -56,7 +56,6 @@ import {
 } from "../services/indexedDBService";
 import HonePanel from "./HonePanel";
 import { Article } from "../types/types";
-import { set } from "lodash";
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
@@ -242,7 +241,6 @@ const HoneEditor = () => {
     const currentFacetId = getCurrentFacetId(anchorKey);
 
     if (isBlockEmpty && isStartOfBlock && isNotArticleTitle && currentFacetId) {
-      console.log("launchHonePanel", currentFacetId);
       const editorRoot = editorRef.current;
       let topPosition = 0;
 

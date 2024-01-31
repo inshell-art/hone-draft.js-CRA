@@ -6,11 +6,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { fetchAllFacets, fetchAllHoningRecord, fetchFacet } from "../services/indexedDBService";
-import { Facet, FacetWithSimilarity, FacetList, HonedFacetWithHoningFacets } from "../types/types";
+import { fetchAllFacets, fetchAllHoningRecord } from "../services/indexedDBService";
+import { Facet, FacetWithSimilarity, FacetList } from "../types/types";
 import { calculateSimilarityAndSort } from "../utils/utils";
 import SimilarityBars from "./SimilarityBars";
-import _, { set } from "lodash";
+import _ from "lodash";
 
 const FACETs = () => {
   const [facetList, setFacetList] = useState<FacetList>([]);
@@ -57,6 +57,7 @@ const FACETs = () => {
   return (
     <div>
       <div className="FACETs">
+        {facetList.length === 0 && <div>No facets yet.</div>}
         {facetList.map((facet) => (
           <div key={facet.honedFacet.facetId} className="honed-facet">
             <Link to={`/article/${facet.honedFacet.articleId}#${facet.honedFacet.facetId}`}>{facet.honedFacet.title}</Link>
