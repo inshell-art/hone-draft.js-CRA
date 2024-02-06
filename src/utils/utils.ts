@@ -5,7 +5,6 @@ export const getCurrentDate = () => {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const date = now.getDate();
-  // and time
 
   const hour = now.getHours();
   const minute = now.getMinutes();
@@ -22,6 +21,7 @@ export const jaccardSimilarity = (a: string, b: string) => {
   return intersection.size / union.size;
 };
 
+// helper function: calculate transparency for similarity bar, it's not linear but logarithmic to make it more visually distinguishable
 export const similarityBar = (similarity: number) => {
   const calculateTransparency = (similarity: number) => {
     return 1 - Math.exp(-10 * similarity);

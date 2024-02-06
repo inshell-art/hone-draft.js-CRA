@@ -1,3 +1,7 @@
+/**
+ * SimilarityBars component is used to display the similarity of the facets
+ */
+
 import { SimilarityBarProps } from "../types/types";
 import { similarityBar } from "../utils/utils";
 

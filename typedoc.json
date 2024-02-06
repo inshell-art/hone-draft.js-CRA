@@ -1,0 +1,7 @@
+{
+  "out": "./docs",
+  "name": "Hone",
+  "theme": "default",
+  "entryPoints": ["src/index.tsx"],
+  "exclude": ["**/node_modules/**", "**/*.test.ts"]
+}

@@ -1,5 +1,6 @@
 import { RawDraftContentState } from "draft-js";
 
+//
 export type Article = {
   articleId: string;
   updateAt?: string;

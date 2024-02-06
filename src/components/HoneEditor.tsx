@@ -5,26 +5,14 @@
  * This component is the editor of Hone. It is a rich text editor based on draft.js.
  * Users can create and edit articles in this editor.
  *
- * Articles consist of article title, non-facet, and facets;
- * a facet consist of facet title and facet content;
- * facet title is the first block (defined by draft.js) of a facet, which starts with a symbol "$",
- * and facet content is the blocks after facet title.
- * blocks not in facets are non-facets.
- * block start with ~ is a not-facet.
- *
- * Users can compare and insert facets in the editor, which is the core feature of Hone:
- * it could polish (hone) the facets in multiple articles to propose the users' thoughts, that is,
- * articles are not the place to present thoughts, rather, the scenarios and context to polish thoughts as facets:
- * and facets are the essence of cognition of users.
- *
- * All operations of Hone are based on this component,
- * except article deletion and Hone publishing that are in MyHone.tsx.
+ * Articles are the scenarios and context to polish thoughts as facets.
+ * Facets are the content starts with a symbol "$" and the line is "facet title", and the blocks after the line are "facet content".
+ * Users can compare and insert facets in the editor, which is the core feature of Hone, as the operation "hone".
  *
  * Features:
  * Create and edit articles
  * Create and edit facets
- * Create non-facets and not-facets
- * Compare and insert facets
+ * Compare and insert facets (hone)
  * Save/load articles
  * style articles and facets
  */
@@ -87,7 +75,7 @@ const HoneEditor = () => {
   const location = useLocation();
   const [targetBlockId, setTargetBlockId] = useState<string | null>(null);
 
-  // initialize the editor with the article
+  // initialize the editor with the articleId
   useEffect(() => {
     if (!articleId) return;
 
@@ -204,6 +192,7 @@ const HoneEditor = () => {
     }
     return "not-handled";
   };
+
   // helper fn to get current facet text to calculate similarity
   const getCurrentFacetId = (anchorKey: string): string => {
     const blockMap = editorState.getCurrentContent().getBlockMap();
@@ -273,6 +262,7 @@ const HoneEditor = () => {
     }, 0);
   };
 
+  // helper function to handle facet insert
   const handleFacetInsert = async (facetId: string) => {
     const currentContentState = editorState.getCurrentContent();
     const currentBlockArray = currentContentState.getBlocksAsArray();
@@ -311,6 +301,7 @@ const HoneEditor = () => {
     setActiveHonePanel(false);
   };
 
+  // helper function to handle pasted text
   const handlePastedText = (text: string, _html: string | undefined, editorState: EditorState): DraftHandleValue => {
     const currentContent = editorState.getCurrentContent();
     const currentSelection = editorState.getSelection();

@@ -7,19 +7,19 @@ import { FACET_TITLE_SYMBOL } from "../utils/constants";
 class HoneDatabase extends Dexie {
   articles: Dexie.Table<Article, string>;
   facets: Dexie.Table<Facet, string>;
-  hongingRecords: Dexie.Table<HoningRecord, number>;
+  honingRecords: Dexie.Table<HoningRecord, number>;
 
   constructor() {
     super("HoneDatabase");
     this.version(1).stores({
       articles: "articleId",
       facets: "facetId, articleId",
-      hongingRecords: "++id, honedFacetId, honingFacetId",
+      honingRecords: "++id, honedFacetId, honingFacetId",
     });
 
     this.articles = this.table("articles");
     this.facets = this.table("facets");
-    this.hongingRecords = this.table("hongingRecords");
+    this.honingRecords = this.table("honingRecords");
   }
 }
 
@@ -110,7 +110,7 @@ export const submitFacets = async (articleId: string, editorState: EditorState) 
 };
 // #endregion
 
-// Extract a facet as content blocks from indexedDB by facetId
+// Extract facet from indexedDB for insertion with symbol ¢ replacement to ignore adding new facet title
 export const extractFacetForInsert = async (facetId: string): Promise<ContentBlock[]> => {
   const facet = await db.facets.get(facetId);
   if (!facet) {
@@ -119,7 +119,6 @@ export const extractFacetForInsert = async (facetId: string): Promise<ContentBlo
 
   // Replace $ with ¢ in the title
   const modifiedTitle = facet.title.replace("$", "¢") || "";
-  console.log(modifiedTitle);
 
   const titleBlock = new ContentBlock({
     key: genKey(),
@@ -145,25 +144,25 @@ export const extractFacetForInsert = async (facetId: string): Promise<ContentBlo
  * submit honing record to indexedDB:
  *
  * Honing operation adheres two characteristics:
- * 1. hoing is the relationship could be transitive, and values are equal in different heirarchies
+ * 1. honing is the relationship could be transitive, so values are equal in different level in the hierarchy
  * 2. Honing is a conscious operation.
  *
  * So, the rules are:
  * Honing is a transitive relation: if A is honedBy B, and B is honedBy C, then A is honedBy C
- * Honing records the intentional insertion/honing only, not the effeictive honing like editing
- * Honing is deduplicative: if A honing B twice, then the second honing is ignored.
+ * Honing records the intentional insertion/honing only, not the effective honing like editing
+ * Honing is deduplicated : if A honing B twice, then the second honing is ignored.
  *
  * TODO: deduplicate honing record
  *  */
 export const submitHoningRecord = async (currentFacetId: string, insertedFacetId: string) => {
   try {
-    await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: insertedFacetId });
+    await db.honingRecords.put({ honedFacetId: currentFacetId, honingFacetId: insertedFacetId });
 
     // pass transitive relation to current facet
-    const honingFacetsOfInsertedFacet = await db.hongingRecords.where("honedFacetId").equals(insertedFacetId).toArray();
+    const honingFacetsOfInsertedFacet = await db.honingRecords.where("honedFacetId").equals(insertedFacetId).toArray();
 
     for (const honingFacet of honingFacetsOfInsertedFacet) {
-      await db.hongingRecords.put({ honedFacetId: currentFacetId, honingFacetId: honingFacet.honingFacetId });
+      await db.honingRecords.put({ honedFacetId: currentFacetId, honingFacetId: honingFacet.honingFacetId });
     }
   } catch (error) {
     console.log(error);
@@ -171,6 +170,6 @@ export const submitHoningRecord = async (currentFacetId: string, insertedFacetId
 };
 
 export const fetchAllHoningRecord = async () => {
-  const honingRecords = await db.hongingRecords.toArray();
+  const honingRecords = await db.honingRecords.toArray();
   return honingRecords;
 };

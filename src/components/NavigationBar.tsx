@@ -1,10 +1,12 @@
 /**
- * navigation bar
- *
+ * navigation bar is on the top of the page, it contains 4 parts:
+ * 1. FACETs
+ * 2. Articles
+ * 3. Hone (as the flash title of the page)
+ * 4. create article
  */
 
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, NavLink, Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 
@@ -15,8 +17,6 @@ const NavigationBar = () => {
     const newArticleId = uuidv4();
     navigate(`/article/${newArticleId}`);
   };
-
-  // when click "create article", execute createArticle function
 
   return (
     <div>

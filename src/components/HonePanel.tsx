@@ -1,3 +1,8 @@
+/**
+ * HonePanel component to display the similar facets and allow user to select one
+ * It is pop up panel lives on HoneEditor
+ */
+
 import { HonePanelProps, FacetWithSimilarity } from "../types/types";
 import { fetchAllFacets } from "../services/indexedDBService";
 import React, { useState, useEffect } from "react";
@@ -54,7 +59,7 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  // highlight the facet when press up or down
+  // highlight the facet when press Up or Down, and select the facet when press Enter
   useEffect(() => {
     let isKeyHandled = false;
 
@@ -106,6 +111,7 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
     setHighlightedFacetIndex(index);
   };
 
+  // position the panel based on the top position
   const passPosition: React.CSSProperties = {
     top: `${topPosition}px`,
   };

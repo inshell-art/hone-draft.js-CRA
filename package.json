@@ -77,6 +77,9 @@
   "overrides": {
     "css-select": {
       "nth-check": "^2.0.1"
+    },
+    "resolve-url-loader": {
+      "postcss": "^8.4.31"
     }
   }
 }
