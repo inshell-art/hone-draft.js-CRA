@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import SimilarityBars from "./SimilarityBars";
 import "@testing-library/jest-dom";
