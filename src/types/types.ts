@@ -20,7 +20,7 @@ export type HoningRecord = {
   honingFacetId: string;
 };
 
-// Transeint data types for facet list
+// Transient data types for facet list
 export type FacetWithSimilarity = {
   facetId: string;
   articleId: string;
