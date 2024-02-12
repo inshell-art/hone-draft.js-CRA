@@ -1,9 +1,12 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import HonePanel from "./HonePanel"; // Adjust the import path as necessary
+import HonePanel from "./HonePanel";
+import { HonePanelProps } from "../types/types";
 import * as indexedDBService from "../services/indexedDBService";
 import * as utils from "../utils/utils";
+import { on } from "events";
+import { INSERT_PROMPT } from "../utils/constants";
 
 // Mock the fetchAllFacets and calculateSimilarityAndSort functions
 jest.mock("../services/indexedDBService", () => ({
@@ -27,6 +30,12 @@ describe("HonePanel", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("renders only when isActive is true", () => {
+    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="3" />);
+
+    expect(screen.getByText(INSERT_PROMPT));
   });
 
   it("fetches facets and displays them sorted by similarity", async () => {

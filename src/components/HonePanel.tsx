@@ -11,6 +11,8 @@ import { INSERT_PROMPT } from "../utils/constants";
 import SimilarityBars from "./SimilarityBars";
 
 const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetId }: HonePanelProps) => {
+  if (!isActive) return null;
+
   const [facets, setFacets] = useState<FacetWithSimilarity[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
@@ -103,8 +105,6 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isActive, highlightedFacetIndex, facets.length, onSelectFacet, facets]);
-
-  if (!isActive) return null;
 
   // when mouse over the facet, set the highlightedFacetIndex
   const handleMouseOver = (index: number) => {

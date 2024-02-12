@@ -336,7 +336,7 @@ const HoneEditor = () => {
           blockRendererFn={blockRendererFn}
         />
       </div>
-      {honePanelTopPosition && currentFacetId !== null && (
+      {activeHonePanel && honePanelTopPosition && currentFacetId !== null && (
         <HonePanel
           isActive={activeHonePanel}
           topPosition={honePanelTopPosition}
