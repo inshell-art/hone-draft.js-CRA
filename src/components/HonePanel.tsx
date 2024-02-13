@@ -120,19 +120,23 @@ const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacet
     <div ref={ref} style={passPosition} className="hone-panel">
       <div className="hone-panel-title">{INSERT_PROMPT}</div>
       <div className="hone-panel-content">
-        {facets.map((facet, index) => {
-          return (
-            <div
-              key={index}
-              className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
-              onMouseOver={() => handleMouseOver(index)}
-              onClick={() => onSelectFacet(facet.facetId)}
-            >
-              <SimilarityBars similarity={facet.similarity} />
-              <span className="facet-title">{facet.facetTitle}</span>
-            </div>
-          );
-        })}
+        {facets.length > 0 ? (
+          facets.map((facet, index) => {
+            return (
+              <div
+                key={index}
+                className={`facet-item ${index === highlightedFacetIndex ? "highlighted" : ""}`}
+                onMouseOver={() => handleMouseOver(index)}
+                onClick={() => onSelectFacet(facet.facetId)}
+              >
+                <SimilarityBars similarity={facet.similarity} />
+                <span className="facet-title">{facet.facetTitle}</span>
+              </div>
+            );
+          })
+        ) : (
+          <div>No facet available</div>
+        )}
       </div>
     </div>
   );

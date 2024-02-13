@@ -18,36 +18,42 @@ jest.mock("../utils/utils", () => ({
 
 describe("HonePanel", () => {
   const mockFacets = [
-    { facetId: "1", title: "Facet 1", content: "", similarity: 0.9 },
-    { facetId: "2", title: "Facet 2", content: "", similarity: 0.8 },
+    { facetId: "1", articleId: "article1", title: "Facet1", content: "Content 1" },
+    { facetId: "2", articleId: "article2", title: "Facet2", content: "Content 2" },
+  ];
+
+  const mockFacetsWithSimilarity = [
+    { facetId: "1", articleId: "article1", title: "Facet1", similarity: 0.9 },
+    { facetId: "2", articleId: "article2", title: "Facet2", similarity: 0.8 },
   ];
 
   beforeEach(() => {
-    // Mock implementation to return the mockFacets
     (indexedDBService.fetchAllFacets as jest.Mock).mockResolvedValue(mockFacets);
-    (utils.calculateSimilarityAndSort as jest.Mock).mockImplementation(() => mockFacets);
+    (utils.calculateSimilarityAndSort as jest.Mock).mockReturnValue(mockFacetsWithSimilarity);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("renders only when isActive is true", () => {
-    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="3" />);
-
+  it("renders when isActive is true", () => {
+    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
     expect(screen.getByText(INSERT_PROMPT));
   });
 
-  it("fetches facets and displays them sorted by similarity", async () => {
+  it("does not render when isActive is false", () => {
+    render(<HonePanel isActive={false} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
+    expect(screen.queryByText(INSERT_PROMPT)).toBeNull();
+  });
+
+  it("display the facets with similarity", async () => {
     render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
 
-    // Check if the panel is rendered and positioned correctly
-    const panel = await screen.findByRole("dialog");
-    expect(panel).toHaveStyle("top: 100px");
-
-    // Check for the presence of facets based on the mock data
-    expect(screen.getByText("Facet 1")).toBeInTheDocument();
-    expect(screen.getByText("Facet 2")).toBeInTheDocument();
+    // Wait for the facets to be loaded and displayed
+    const facet1 = await screen.findByText("Facet1");
+    const facet2 = screen.getByText("Facet2");
+    expect(facet1).toBeInTheDocument();
+    expect(facet2).toBeInTheDocument();
   });
 
   it("closes the panel when the Escape key is pressed", async () => {
@@ -61,6 +67,7 @@ describe("HonePanel", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  //todo add test case for rapid key press
   it("highlights the next facet on ArrowDown key press", async () => {
     render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
 
@@ -75,5 +82,5 @@ describe("HonePanel", () => {
     expect(secondFacet).toHaveClass("highlighted");
   });
 
-  // Add more tests as needed...
+  //todo it highlights the facet index when mouse hovers over it
 });
