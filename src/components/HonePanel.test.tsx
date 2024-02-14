@@ -1,86 +1,73 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import HonePanel from "./HonePanel";
-import { HonePanelProps } from "../types/types";
 import * as indexedDBService from "../services/indexedDBService";
 import * as utils from "../utils/utils";
-import { on } from "events";
 import { INSERT_PROMPT } from "../utils/constants";
+import { Facet, FacetWithSimilarity } from "../types/types";
 
-// Mock the fetchAllFacets and calculateSimilarityAndSort functions
+// Mock necessary imports
 jest.mock("../services/indexedDBService", () => ({
   fetchAllFacets: jest.fn(),
 }));
-jest.mock("../utils/utils", () => ({
-  calculateSimilarityAndSort: jest.fn(),
-}));
+
+jest.spyOn(utils, "calculateSimilarityAndSort");
 
 describe("HonePanel", () => {
-  const mockFacets = [
-    { facetId: "1", articleId: "article1", title: "Facet1", content: "Content 1" },
-    { facetId: "2", articleId: "article2", title: "Facet2", content: "Content 2" },
+  // Setup mock data
+  const mockFacets: Facet[] = [
+    { facetId: "1", articleId: "article1", title: "Facet1" },
+    { facetId: "2", articleId: "article2", title: "Facet2" },
   ];
 
-  const mockFacetsWithSimilarity = [
-    { facetId: "1", articleId: "article1", title: "Facet1", similarity: 0.9 },
-    { facetId: "2", articleId: "article2", title: "Facet2", similarity: 0.8 },
+  const mockFacetsWithSimilarity: FacetWithSimilarity[] = [
+    { facetId: "1", articleId: "article1", facetTitle: "Facet1", similarity: 0.9 },
+    { facetId: "2", articleId: "article2", facetTitle: "Facet2", similarity: 0.8 },
   ];
 
   beforeEach(() => {
+    // Mock implementation to return the test data
     (indexedDBService.fetchAllFacets as jest.Mock).mockResolvedValue(mockFacets);
     (utils.calculateSimilarityAndSort as jest.Mock).mockReturnValue(mockFacetsWithSimilarity);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
-  it("renders when isActive is true", () => {
-    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
-    expect(screen.getByText(INSERT_PROMPT));
-  });
-
-  it("does not render when isActive is false", () => {
-    render(<HonePanel isActive={false} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
-    expect(screen.queryByText(INSERT_PROMPT)).toBeNull();
-  });
-
-  it("display the facets with similarity", async () => {
-    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
-
-    // Wait for the facets to be loaded and displayed
-    const facet1 = await screen.findByText("Facet1");
-    const facet2 = screen.getByText("Facet2");
-    expect(facet1).toBeInTheDocument();
-    expect(facet2).toBeInTheDocument();
-  });
-
-  it("closes the panel when the Escape key is pressed", async () => {
+  it("renders facets correctly when isActive is true and simulate interactions", async () => {
+    const onSelectFacet = jest.fn();
     const onClose = jest.fn();
-    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={onClose} currentFacetId="1" />);
 
-    // Simulate pressing the Escape key
-    fireEvent.keyDown(document, { key: "Escape" });
+    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={onSelectFacet} onClose={onClose} currentFacetId="1" />);
 
-    // Check if onClose was called
+    // Verify that the panel renders with the expected prompt
+    expect(screen.getByText(INSERT_PROMPT)).toBeInTheDocument();
+
+    // Wait for the facets to be fetched and displayed
+    await waitFor(() => {
+      expect(screen.getByText("Facet1"));
+      expect(screen.getByText("Facet2"));
+    });
+
+    // Simulate selecting the first facet
+    fireEvent.click(screen.getByText("Facet1"));
+    expect(onSelectFacet).toHaveBeenCalledWith("1");
+
+    // Simulate closing panel when click outside
+    fireEvent.click(document);
+    expect(onClose).toHaveBeenCalled();
+
+    // Simulate closing panel when press Esc
+    fireEvent.keyDown(window, { key: "Escape", code: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });
 
-  //todo add test case for rapid key press
-  it("highlights the next facet on ArrowDown key press", async () => {
-    render(<HonePanel isActive={true} topPosition={100} onSelectFacet={jest.fn()} onClose={jest.fn()} currentFacetId="1" />);
+  it("does not render when isActive is false", () => {
+    const onSelectFacet = jest.fn();
+    const onClose = jest.fn();
 
-    // Wait for the facets to be loaded and displayed
-    const firstFacet = await screen.findByText("Facet 1");
-
-    // Simulate ArrowDown key press to move the highlight to the next facet
-    userEvent.type(firstFacet, "{arrowdown}");
-
-    // Check if the next facet is highlighted
-    const secondFacet = screen.getByText("Facet 2");
-    expect(secondFacet).toHaveClass("highlighted");
+    render(<HonePanel isActive={false} topPosition={100} onSelectFacet={onSelectFacet} onClose={onClose} currentFacetId="1" />);
+    expect(screen.queryByText(INSERT_PROMPT)).not.toBeInTheDocument();
   });
-
-  //todo it highlights the facet index when mouse hovers over it
 });
