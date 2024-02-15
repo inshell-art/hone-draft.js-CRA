@@ -11,8 +11,6 @@ import { INSERT_PROMPT } from "../utils/constants";
 import SimilarityBars from "./SimilarityBars";
 
 const HonePanel = ({ isActive, topPosition, onSelectFacet, onClose, currentFacetId }: HonePanelProps) => {
-  if (!isActive) return null;
-
   const [facets, setFacets] = useState<FacetWithSimilarity[]>([]);
   const [highlightedFacetIndex, setHighlightedFacetIndex] = useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
