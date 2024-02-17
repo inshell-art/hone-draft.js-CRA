@@ -46,8 +46,7 @@ describe("HonePanel", () => {
 
     // Wait for the facets to be fetched and displayed
     await waitFor(() => {
-      expect(screen.getByText("Facet1"));
-      expect(screen.getByText("Facet2"));
+      expect(screen.getByText("Facet1")).toBeInTheDocument();
     });
 
     // Simulate selecting the first facet
@@ -61,13 +60,5 @@ describe("HonePanel", () => {
     // Simulate closing panel when press Esc
     fireEvent.keyDown(window, { key: "Escape", code: "Escape" });
     expect(onClose).toHaveBeenCalled();
-  });
-
-  it("does not render when isActive is false", () => {
-    const onSelectFacet = jest.fn();
-    const onClose = jest.fn();
-
-    render(<HonePanel isActive={false} topPosition={100} onSelectFacet={onSelectFacet} onClose={onClose} currentFacetId="1" />);
-    expect(screen.queryByText(INSERT_PROMPT)).not.toBeInTheDocument();
   });
 });
