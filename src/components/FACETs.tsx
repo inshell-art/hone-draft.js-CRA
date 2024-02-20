@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { fetchAllFacets, fetchAllHoningRecord } from "../services/indexedDBService";
-import { Facet, FacetWithSimilarity, FacetList } from "../types/types";
-import { calculateSimilarityAndSort } from "../utils/utils";
-import SimilarityBars from "./SimilarityBars";
-import _ from "lodash";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { fetchAllFacets, fetchAllHoningRecord } from '../services/indexedDBService';
+import { Facet, FacetWithSimilarity, FacetList } from '../types/types';
+import { calculateSimilarityAndSort } from '../utils/utils';
+import SimilarityBars from './SimilarityBars';
+import _ from 'lodash';
 
 const FACETs = () => {
   const [facetList, setFacetList] = useState<FacetList>([]);
@@ -38,12 +38,12 @@ const FACETs = () => {
         const sortedAggregatedFacets = _.orderBy(
           aggregatedFacets,
           [(aggregatedFacet) => aggregatedFacet.honingFacets.length, (aggregatedFacet) => aggregatedFacet.honedFacet.title],
-          ["desc", "asc"]
+          ['desc', 'asc']
         );
 
         setFacetList(sortedAggregatedFacets);
       } catch (error) {
-        console.log("Failed to fetch facets to create facet list:", error);
+        console.log('Failed to fetch facets to create facet list:', error);
       }
     })();
   }, []);

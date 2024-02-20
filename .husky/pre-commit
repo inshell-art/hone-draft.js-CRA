@@ -1,2 +1,2 @@
-npm run test:no-watch
-
+npm lint
+npm prettier

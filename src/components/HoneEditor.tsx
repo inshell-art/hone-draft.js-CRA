@@ -18,8 +18,8 @@
  */
 // #endregion description
 
-import React, { useState, useEffect, useRef, ReactNode } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import {
   Editor,
   ContentBlock,
@@ -32,18 +32,18 @@ import {
   Modifier,
   DraftHandleValue,
   EditorBlock,
-} from "draft-js";
-import { getCurrentDate } from "../utils/utils";
-import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from "../utils/constants";
+} from 'draft-js';
+import { getCurrentDate } from '../utils/utils';
+import { ARTICLE_TITLE, FACET_TITLE, FACET_TITLE_SYMBOL } from '../utils/constants';
 import {
   submitArticle,
   fetchArticle,
   submitFacets,
   submitHoningRecord,
   extractFacetForInsert,
-} from "../services/indexedDBService";
-import HonePanel from "./HonePanel";
-import { Article } from "../types/types";
+} from '../services/indexedDBService';
+import HonePanel from './HonePanel';
+import { Article } from '../types/types';
 
 const assembleArticle = (articleId: string, editorState: EditorState): Article => {
   const updateAt = getCurrentDate();
@@ -91,7 +91,7 @@ const HoneEditor = () => {
   // Extract blockId from hash
   useEffect(() => {
     const hash = location.hash;
-    const blockId = hash.replace(/^#/, "").replace(`${articleId}-`, "");
+    const blockId = hash.replace(/^#/, '').replace(`${articleId}-`, '');
 
     if (blockId) {
       setTargetBlockId(blockId);
@@ -106,7 +106,7 @@ const HoneEditor = () => {
 
         if (blockElement) {
           const scrollPosition = blockElement.getBoundingClientRect().top + window.scrollY - 100;
-          window.scrollTo({ top: scrollPosition, behavior: "smooth" });
+          window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
         }
       }
     }, 200);
@@ -148,13 +148,13 @@ const HoneEditor = () => {
       try {
         submitArticle(article);
       } catch (error) {
-        console.error("Error while submitArticle", error);
+        console.error('Error while submitArticle', error);
       }
 
       try {
         submitFacets(articleId, newEditorState);
       } catch (error) {
-        console.error("Error while submitFacets", error);
+        console.error('Error while submitFacets', error);
       }
 
       setPrevArticleText(currentPlainText);
@@ -172,13 +172,13 @@ const HoneEditor = () => {
     } else if (text.startsWith(FACET_TITLE_SYMBOL)) {
       return FACET_TITLE;
     }
-    return "unstyled";
+    return 'unstyled';
   };
 
   // when cmd + enter is pressed
   const keyBindingFn = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && e.metaKey) {
-      return "activate-hone-panel";
+    if (e.key === 'Enter' && e.metaKey) {
+      return 'activate-hone-panel';
     }
 
     return getDefaultKeyBinding(e); // Handle other keys normally
@@ -186,32 +186,32 @@ const HoneEditor = () => {
 
   // Handle cmd + enter to launch hone panel
   const handleKeyCommand = (command: string) => {
-    if (command === "activate-hone-panel") {
+    if (command === 'activate-hone-panel') {
       launchHonePanel();
-      return "handled";
+      return 'handled';
     }
-    return "not-handled";
+    return 'not-handled';
   };
 
   // helper fn to get current facet text to calculate similarity
   const getCurrentFacetId = (anchorKey: string): string => {
     const blockMap = editorState.getCurrentContent().getBlockMap();
 
-    let currentFacetTitleKey = "";
-    let blocksBeforeAnchor = blockMap
+    let currentFacetTitleKey = '';
+    const blocksBeforeAnchor = blockMap
       .takeUntil((_, k) => k === anchorKey)
       .reverse()
       .entrySeq()
       .toArray();
 
-    for (let [key, block] of blocksBeforeAnchor) {
+    for (const [key, block] of blocksBeforeAnchor) {
       if (block.getText().startsWith(FACET_TITLE_SYMBOL)) {
         currentFacetTitleKey = key;
         break;
       }
     }
 
-    if (!currentFacetTitleKey) return "";
+    if (!currentFacetTitleKey) return '';
     const currentFacetId = `${articleId}-${currentFacetTitleKey}`;
 
     return currentFacetId;
@@ -278,23 +278,25 @@ const HoneEditor = () => {
     }
     if (!facetBlockArray) return;
 
-    const updateBlcokArray = [
+    const updateBlockArray = [
       ...currentBlockArray.slice(0, insertBlockIndex),
       ...facetBlockArray,
       ...currentBlockArray.slice(insertBlockIndex),
     ];
 
-    const newContentState = ContentState.createFromBlockArray(updateBlcokArray);
-    const newEditorState = EditorState.push(editorState, newContentState, "insert-fragment");
-    const updatedEditorState = EditorState.forceSelection(newEditorState, savedSelection!);
+    const newContentState = ContentState.createFromBlockArray(updateBlockArray);
+    const newEditorState = EditorState.push(editorState, newContentState, 'insert-fragment');
+    if (savedSelection) {
+      const updatedEditorState = EditorState.forceSelection(newEditorState, savedSelection);
 
-    setEditorState(updatedEditorState);
+      setEditorState(updatedEditorState);
+    }
 
     if (currentFacetId) {
       try {
         submitHoningRecord(currentFacetId, facetId);
       } catch (error) {
-        console.error("Error of SubmitHonedBy:", error);
+        console.error('Error of SubmitHonedBy:', error);
       }
     }
 
@@ -314,10 +316,10 @@ const HoneEditor = () => {
     );
 
     // Update the editor state
-    const newEditorState = EditorState.push(editorState, newContentState, "insert-characters");
+    const newEditorState = EditorState.push(editorState, newContentState, 'insert-characters');
     setEditorState(newEditorState);
 
-    return "handled"; // Return 'handled' to indicate we've taken care of the paste
+    return 'handled'; // Return 'handled' to indicate we've taken care of the paste
   };
 
   return (

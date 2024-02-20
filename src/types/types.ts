@@ -1,4 +1,4 @@
-import { RawDraftContentState } from "draft-js";
+import { RawDraftContentState } from 'draft-js';
 
 //
 export type Article = {
@@ -36,7 +36,7 @@ export type HonedFacetWithHoningFacets = {
 export type FacetList = HonedFacetWithHoningFacets[];
 
 export type HonePanelProps = {
-  isActive: Boolean;
+  isActive: boolean;
   topPosition: number; // only vertical
   onSelectFacet: (facetId: string) => void;
   onClose: () => void;

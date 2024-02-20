@@ -44,14 +44,10 @@
     "test": "react-scripts test",
     "test:no-watch": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject",
+    "lint": "eslint src/**/*.ts src/**/*.tsx",
+    "prettier": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,css,md}'",
     "type-check": "tsc --noEmit",
     "prepare": "husky"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [
@@ -78,6 +74,7 @@
     "@types/uuid": "^9.0.6",
     "husky": "^9.0.11",
     "npm-force-resolutions": "^0.0.10",
+    "prettier": "^3.2.5",
     "typescript": "^4.9.5"
   },
   "overrides": {

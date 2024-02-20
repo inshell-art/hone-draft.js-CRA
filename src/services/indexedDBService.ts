@@ -1,7 +1,7 @@
-import Dexie from "dexie";
-import { Article, Facet, HoningRecord } from "../types/types";
-import { ContentBlock, EditorState, genKey } from "draft-js";
-import { FACET_TITLE_SYMBOL } from "../utils/constants";
+import Dexie from 'dexie';
+import { Article, Facet, HoningRecord } from '../types/types';
+import { ContentBlock, EditorState, genKey } from 'draft-js';
+import { FACET_TITLE_SYMBOL } from '../utils/constants';
 
 // Initialize database
 class HoneDatabase extends Dexie {
@@ -10,16 +10,16 @@ class HoneDatabase extends Dexie {
   honingRecords: Dexie.Table<HoningRecord, number>;
 
   constructor() {
-    super("HoneDatabase");
+    super('HoneDatabase');
     this.version(1).stores({
-      articles: "articleId",
-      facets: "facetId, articleId",
-      honingRecords: "++id, honedFacetId, honingFacetId",
+      articles: 'articleId',
+      facets: 'facetId, articleId',
+      honingRecords: '++id, honedFacetId, honingFacetId',
     });
 
-    this.articles = this.table("articles");
-    this.facets = this.table("facets");
-    this.honingRecords = this.table("honingRecords");
+    this.articles = this.table('articles');
+    this.facets = this.table('facets');
+    this.honingRecords = this.table('honingRecords');
   }
 }
 
@@ -70,10 +70,10 @@ const assembleFacets = (editorState: EditorState, articleId: string): Facet[] =>
         facetId,
         articleId,
         title: block.getText(),
-        content: "",
+        content: '',
       };
     } else if (currentFacet) {
-      currentFacet.content += block.getText() + "\n";
+      currentFacet.content += block.getText() + '\n';
       if (isLastBlock) {
         facets.push(currentFacet);
         currentFacet = null;
@@ -85,7 +85,7 @@ const assembleFacets = (editorState: EditorState, articleId: string): Facet[] =>
 };
 
 const updateFacetsToDb = async (articleId: string, newFacets: Facet[]) => {
-  const existingFacets = await db.facets.where("articleId").equals(articleId).toArray();
+  const existingFacets = await db.facets.where('articleId').equals(articleId).toArray();
   const newFacetsId = newFacets.map((facet) => facet.facetId);
 
   for (const facet of existingFacets) {
@@ -114,24 +114,24 @@ export const submitFacets = async (articleId: string, editorState: EditorState) 
 export const extractFacetForInsert = async (facetId: string): Promise<ContentBlock[]> => {
   const facet = await db.facets.get(facetId);
   if (!facet) {
-    throw new Error("Error: retrieve facet from indexedDB failed.");
+    throw new Error('Error: retrieve facet from indexedDB failed.');
   }
 
   // Replace $ with ¢ in the title
-  const modifiedTitle = facet.title.replace("$", "¢") || "";
+  const modifiedTitle = facet.title.replace('$', '¢') || '';
 
   const titleBlock = new ContentBlock({
     key: genKey(),
     text: modifiedTitle,
-    type: "unstyled",
+    type: 'unstyled',
   });
 
   const contentBlocks =
-    facet?.content?.split("\n").map((text) => {
+    facet?.content?.split('\n').map((text) => {
       return new ContentBlock({
         key: genKey(),
         text: text,
-        type: "unstyled",
+        type: 'unstyled',
       });
     }) || [];
 
@@ -159,7 +159,7 @@ export const submitHoningRecord = async (currentFacetId: string, insertedFacetId
     await db.honingRecords.put({ honedFacetId: currentFacetId, honingFacetId: insertedFacetId });
 
     // pass transitive relation to current facet
-    const honingFacetsOfInsertedFacet = await db.honingRecords.where("honedFacetId").equals(insertedFacetId).toArray();
+    const honingFacetsOfInsertedFacet = await db.honingRecords.where('honedFacetId').equals(insertedFacetId).toArray();
 
     for (const honingFacet of honingFacetsOfInsertedFacet) {
       await db.honingRecords.put({ honedFacetId: currentFacetId, honingFacetId: honingFacet.honingFacetId });
