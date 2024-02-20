@@ -42,8 +42,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:no-watch": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
@@ -74,6 +76,7 @@
     "@types/lodash": "^4.14.202",
     "@types/testing-library__jest-dom": "^6.0.0",
     "@types/uuid": "^9.0.6",
+    "husky": "^9.0.11",
     "npm-force-resolutions": "^0.0.10",
     "typescript": "^4.9.5"
   },
