@@ -1,1 +1,1 @@
-npm test:no-watch
+npm run test:no-watch
