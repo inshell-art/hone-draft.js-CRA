@@ -1,4 +1,4 @@
-import { Facet, FacetWithSimilarity } from "../types/types";
+import { Facet, FacetWithSimilarity } from '../types/types';
 
 export const getCurrentDate = () => {
   const now = new Date();
@@ -14,8 +14,8 @@ export const getCurrentDate = () => {
 };
 
 export const jaccardSimilarity = (a: string, b: string) => {
-  const aSet = new Set(a.split(" "));
-  const bSet = new Set(b.split(" "));
+  const aSet = new Set(a.split(' '));
+  const bSet = new Set(b.split(' '));
   const intersection = new Set([...aSet].filter((x) => bSet.has(x)));
   const union = new Set([...aSet, ...bSet]);
   return intersection.size / union.size;
@@ -28,9 +28,9 @@ export const similarityBar = (similarity: number) => {
   };
 
   const barStyle = {
-    fontSize: "1rem",
-    width: "0.33rem",
-    display: "inline-block",
+    fontSize: '1rem',
+    width: '0.33rem',
+    display: 'inline-block',
   };
 
   const bars = [];

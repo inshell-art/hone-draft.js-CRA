@@ -6,9 +6,10 @@
  * 4. create article
  */
 
-import { NavLink } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 const NavigationBar = () => {
   const navigate = useNavigate();
@@ -22,12 +23,12 @@ const NavigationBar = () => {
     <div>
       <div className="nav-bar">
         <div className="nav-FACETs">
-          <NavLink to="/" className={({ isActive }) => (isActive ? "active-facets" : "")}>
+          <NavLink to="/" className={({ isActive }) => (isActive ? 'active-facets' : '')}>
             $ FACETs &gt;
           </NavLink>
         </div>
         <div className="nav-Articles">
-          <NavLink to="/Articles" className={({ isActive }) => (isActive ? "active-articles" : "")}>
+          <NavLink to="/Articles" className={({ isActive }) => (isActive ? 'active-articles' : '')}>
             &lt; Articles
           </NavLink>
         </div>

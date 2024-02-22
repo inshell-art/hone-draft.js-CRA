@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400;500;600;700;900&display=swap');
 
 @keyframes fadeIn {
   0% {
@@ -41,7 +41,7 @@ body {
 .entire {
   margin: var(--medium) auto;
   width: var(--width);
-  font-family: "Source Code Pro", monospace;
+  font-family: 'Source Code Pro', monospace;
 }
 /* For placeholder in hone editor */
 .public-DraftEditorPlaceholder-root {
@@ -111,7 +111,7 @@ body {
   background-color: transparent;
   font-size: var(--small);
   color: var(--ash);
-  font-family: "Source Code Pro", monospace;
+  font-family: 'Source Code Pro', monospace;
   border: none;
   padding: 0;
   cursor: pointer;
