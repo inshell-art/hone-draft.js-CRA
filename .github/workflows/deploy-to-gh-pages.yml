@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build-and-upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -28,23 +28,17 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact # This name is used to identify the artifact
           path: ./build/**
 
   deploy:
-    needs: build
+    needs: build-and-upload
     runs-on: ubuntu-latest
     steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: build-artifact
-
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
         with:
-          # No build_dir needed, deployment action uses the artifact
-          artifact_name: build-artifact # Ensure this matches the name used in upload-artifact
+          artifact_name: build-artifact
           token: ${{ secrets.GITHUB_TOKEN }}
