@@ -1,39 +1,46 @@
-name: Deploy Hone to GitHub Pages
+name: Build and Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
       
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18' 
+          node-version: '14' # Adjust as needed
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install
-        
-      - name: Build Project
+
+      - name: Build
         run: npm run build
-        
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifact # This name is used to identify the artifact
+          path: ./build/**
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-artifact
+
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
         with:
-          build_dir: ./build
+          # No build_dir needed, deployment action uses the artifact
+          artifact_name: build-artifact # Ensure this matches the name used in upload-artifact
+          token: ${{ secrets.GITHUB_TOKEN }}
