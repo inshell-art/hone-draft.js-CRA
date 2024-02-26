@@ -46,10 +46,9 @@
     "test:no-watch": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject",
     "lint": "eslint src/**/*.ts src/**/*.tsx",
-    "prettier": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,css,md}'",
+    "prettier": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml}'",
     "type-check": "tsc --noEmit",
-    "prepare": "husky",
-    "deploy": "gh-pages -d build"
+    "prepare": "husky"
   },
   "browserslist": {
     "production": [
