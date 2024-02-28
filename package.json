@@ -24,7 +24,7 @@
     "react-scripts": "^5.0.1",
     "redux-thunk": "^3.1.0",
     "uuid": "^9.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^3.5.2"
   },
   "scripts": {
     "preinstall": "npx npm-force-resolutions",
@@ -59,8 +59,8 @@
     "@types/draft-js": "^0.11.12",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.202",
-    "@types/node": "^16.18.52",
-    "@types/react": "^18.2.22",
+    "@types/node": "^20.11.21",
+    "@types/react": "^18.2.60",
     "@types/react-dom": "^18.2.7",
     "@types/uuid": "^9.0.6",
     "eslint": "^8.3.0",
@@ -81,6 +81,7 @@
     },
     "resolve-url-loader": {
       "postcss": "^8.4.31"
-    }
+    },
+    "typescript": "^5.3.3"
   }
 }
